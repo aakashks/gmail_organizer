@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#pyCharm files
+.idea
+
+#enron dataset
+data/enron_dataset.csv
