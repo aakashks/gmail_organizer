@@ -133,3 +133,5 @@ dmypy.json
 
 #enron dataset
 data/enron_dataset.csv
+
+.json
