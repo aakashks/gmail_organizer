@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 #pyCharm files
-.idea
+.idea/
 
 #enron dataset
 data/enron_dataset.csv

@@ -13,7 +13,7 @@ SCOPES = [
 ]
 
 
-def main():
+def build_service():
 
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
@@ -34,23 +34,13 @@ def main():
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
 
-    print('Successfully Authorized !')
+        print('Successfully Authorized !')
 
     try:
         # Call the Gmail API
         service = build('gmail', 'v1', credentials=creds)
-        results = service.users().messages().list(userId='me').execute()
-        message_id_list = [message['id']
-                               for message in results.get('messages', [])
-                               ]
-
-        message0 = service.users().messages().get(userId='me', id=message_id_list[0]).execute()
-        print(message0)
+        return service
 
     except HttpError as error:
-        # TODO(developer) - Handle errors from gmail API.
+        print('Authorization error or service build error')
         print(f'An error occurred: {error}')
-
-
-if __name__ == '__main__':
-    main()
