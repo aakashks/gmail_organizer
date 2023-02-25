@@ -134,4 +134,7 @@ dmypy.json
 #enron dataset
 data/enron_dataset.csv
 
-*.json
+credentials.json
+token.json
+
+temp/
