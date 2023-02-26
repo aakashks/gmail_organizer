@@ -97,19 +97,22 @@ def read_n_mails(no_of_mails):
             # The Body of the message is in Encrypted format. So, we have to decode it.
             # Get the data and decode it with base 64 decoder.
             if payload.get('parts'):
-                parts = payload.get('parts')[0]
-                data = parts['body']['data']
+                parts0 = payload.get('parts')[0]
+                if parts0.get('body').get('data'):
+                    data = parts0['body']['data']
+                elif parts0.get('parts')[1].get('body'):
+                    data = parts0.get('parts')[1].get('body').get('data')
+
             elif payload.get('body'):
                 data = payload.get('body')['data']
 
-            data = data.replace("-", "+").replace("_", "/")
             # decrypting the message body
-            decoded_data = base64.b64decode(data)
+            decoded_data = base64.b64decode(data, '-_')
 
             # Now, the data obtained is in lxml. So, we will parse
             # it with BeautifulSoup library
-            soup = BeautifulSoup(decoded_data, "lxml")
-            body = str(soup.body())[4:-5]
+            soup = BeautifulSoup(decoded_data, 'lxml')
+            body = soup.text
             formatted_body = format_text(body)
 
             # adding data in the dictionary
@@ -132,7 +135,6 @@ def read_n_mails(no_of_mails):
             label_list_str = ','.join(list(labels))
             messages_dict['labels'].append(label_list_str)
 
-            logger.debug('read mail successfully')
             logger.debug(f'read MailNo- {mail_ctr}')
             read_mails += 1
         except Exception as error:
