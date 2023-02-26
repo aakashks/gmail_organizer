@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 # Call the Gmail API
 service = build_service()
 TOTAL_MAILS = 981
+MAX_MAIL_LIST = 500
 
 
 def list_labels():
@@ -29,10 +30,9 @@ def list_labels():
 all_labels = list_labels()
 
 
-def read_n_mails(no_of_mails=1, max_mail_once=100):
+def read_n_mails(no_of_mails):
     """
-    give dataframe containing specified no of mails
-    :param max_mail_once: int
+    gives a dataframe containing specified no of mails
     :param no_of_mails: int
     :return: pd.DataFrame
     """
@@ -41,29 +41,26 @@ def read_n_mails(no_of_mails=1, max_mail_once=100):
 
     # at maximum only 500 mails can be read once
 
-    if no_of_mails <= max_mail_once:
+    if no_of_mails <= MAX_MAIL_LIST:
         result = service.users().messages().list(maxResults=no_of_mails, userId='me').execute()
         # messages is a list of dictionaries where each dictionary contains a message id.
         messages = result.get('messages')
 
     # if mails are more than 500, next page token is required for reading next page
     else:
-        result = service.users().messages().list(maxResults=max_mail_once, userId='me').execute()
+        result = service.users().messages().list(maxResults=MAX_MAIL_LIST, userId='me').execute()
         # messages is a list of dictionaries where each dictionary contains a message id.
         messages = result.get('messages')
-        next_page_token = result.get('nextPageToken')
-        n = no_of_mails - max_mail_once
+        n = no_of_mails - MAX_MAIL_LIST
         while n > 0:
+            next_page_token = result.get('nextPageToken')
             logger.debug('using page tokens!')
-            no_of_results = max_mail_once if n >= max_mail_once else n
-            next_result = service.users().messages().list(
+            no_of_results = MAX_MAIL_LIST if n >= MAX_MAIL_LIST else n
+            result = service.users().messages().list(
                 maxResults=no_of_results, userId='me', pageToken=next_page_token).execute()
 
-            messages.append(next_result.get('messages'))
-            if n // max_mail_once:
-                next_page_token = next_result.get('nextPageToken')
-
-            n //= max_mail_once
+            messages.extend(result.get('messages'))
+            n = n - MAX_MAIL_LIST
 
     # dictionary to store mails
     messages_dict = defaultdict(list)
@@ -151,24 +148,20 @@ def read_n_mails(no_of_mails=1, max_mail_once=100):
     return messages_df
 
 
-def store_all_mails(test_mode=False):
-    if test_mode:
-        logger.info('reading some mails for testing')
-        lst_dfs = [read_n_mails(21, 5)]
-
-    else:
-        logger.info('reading all mails stored')
-        lst_dfs = [read_n_mails(TOTAL_MAILS)]
-
-    all_mails_df = pd.concat(lst_dfs)
-    all_mails_df.to_csv('../../temp/test1.csv', sep='~')
+def store_all_mails(no_of_mails=TOTAL_MAILS):
+    """
+    stores all mails into 1 csv at once
+    :param no_of_mails: total mails to be read
+    :return: 
+    """
+    logger.info('reading all mails stored')
+    df = read_n_mails(no_of_mails)
+    df.to_csv('../../temp/training_data.csv', sep='~')
 
 
 def format_text(text):
     """
-    :param text: str
-    :return: str
-    will return a simplified format of the body with :: separated words
+    will return a simplified format of the body with space separated words
     """
     regex = re.compile('\s+')
     list_of_words = regex.split(text)
@@ -178,8 +171,6 @@ def format_text(text):
 
 def format_address(text):
     """
-    :param text: str
-    :return: str
     extract the email addresses from sender/receiver details
     """
     regex = re.compile(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}', flags=re.IGNORECASE)
