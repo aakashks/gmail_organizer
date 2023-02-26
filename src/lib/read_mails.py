@@ -1,16 +1,18 @@
-from authorize import build_service
 import base64
-from bs4 import BeautifulSoup
-import pandas as pd
-from collections import defaultdict
 import logging
+import re
+from collections import defaultdict
+
+import pandas as pd
+from bs4 import BeautifulSoup
+
+from src.lib.authorize import build_service
 
 logger = logging.getLogger(__name__)
 
 # Call the Gmail API
 service = build_service()
 TOTAL_MAILS = 800
-TEST_MODE = True
 
 
 def list_labels():
@@ -33,21 +35,25 @@ def read_n_mails(n=1):
     :param n: int  #maximum 200
     :return: pd.DataFrame
     """
-
+    mail_ctr = 0
+    read_mails = 0
     result = service.users().messages().list(maxResults=n, userId='me').execute()
     # messages is a list of dictionaries where each dictionary contains a message id.
     messages = result.get('messages')
     # dictionary to store mails
     messages_dict = defaultdict(list)
-    labels_dict = {label: [] for label in all_labels}
+    # labels_dict = {label: [] for label in all_labels}
+
+    logger.debug(f'listed {len(messages)} messages')
 
     # iterate through all the messages
     for msg in messages:
-        # Get the message from its id
-        txt = service.users().messages().get(userId='me', id=msg['id']).execute()
-
+        mail_ctr += 1
         # Use try-except to avoid any Errors
         try:
+            # Get the message from its id
+            txt = service.users().messages().get(userId='me', id=msg['id']).execute()
+
             # Get value of 'payload' from dictionary 'txt'
             payload = txt['payload']
             headers = payload['headers']
@@ -60,16 +66,20 @@ def read_n_mails(n=1):
                 if d['name'] == 'Date':
                     date = d['value']
                 if d['name'] == 'Subject':
-                    subject = d['value']
+                    subject = format_text(d['value'])
                 if d['name'] == 'From':
-                    sender = d['value']
+                    sender = format_address(d['value'])
                 if d['name'] == 'To':
-                    receiver = d['value']
+                    receiver = format_address(d['value'])
 
             # The Body of the message is in Encrypted format. So, we have to decode it.
             # Get the data and decode it with base 64 decoder.
-            parts = payload.get('parts')[0]
-            data = parts['body']['data']
+            if payload.get('parts'):
+                parts = payload.get('parts')[0]
+                data = parts['body']['data']
+            elif payload.get('body'):
+                data = payload.get('body')['data']
+
             data = data.replace("-", "+").replace("_", "/")
             # decrypting the message body
             decoded_data = base64.b64decode(data)
@@ -78,7 +88,7 @@ def read_n_mails(n=1):
             # it with BeautifulSoup library
             soup = BeautifulSoup(decoded_data, "lxml")
             body = str(soup.body())[4:-5]
-            formatted_body = format_body(body)
+            formatted_body = format_text(body)
 
             # adding data in the dictionary
             messages_dict['id'].append(msg['id'])
@@ -88,36 +98,66 @@ def read_n_mails(n=1):
             messages_dict['subject'].append(subject)
             messages_dict['body'].append(formatted_body)
 
-            # filling up labels as a numerical data
-            for label in all_labels:
-                if label in labels:
-                    labels_dict[label].append('1')
-                else:
-                    labels_dict[label].append('0')
+            # # filling up labels as a numerical data
+            # for label in all_labels:
+            #     if label in labels:
+            #         labels_dict[label].append('1')
+            #     else:
+            #         labels_dict[label].append('0')
 
-        except:
-            pass
+            # filling labels into one col as categorical data
+            label_list_str = ','.join(list(labels))
+            messages_dict['labels'].append(label_list_str)
+
+            logger.debug('read mail successfully')
+            logger.debug(f'read MailNo- {mail_ctr}')
+            read_mails += 1
+        except Exception as error:
+            logger.error(f'error was {error}')
+            logger.debug(f'unable to read MailNo- {mail_ctr}')
+
+        logger.info(f'read {read_mails} out of {n} mails')
 
     # dataframe to store the messages
     messages_df = pd.DataFrame(messages_dict)
-    labels_df = pd.DataFrame(labels_dict)
-    mails_df = pd.concat([messages_df, labels_df], axis=1)
-    return mails_df
+    # labels_df = pd.DataFrame(labels_dict)
+    # mails_df = pd.concat([messages_df, labels_df], axis=1)
+    return messages_df
 
 
-def format_body(body):
-    return body
-
-
-def store_all_mails():
-    logger.info('reading all mails')
-    if TEST_MODE:
-        lst_dfs = [read_n_mails(2)]
+def store_all_mails(test_mode=False):
+    if test_mode:
+        logger.info('reading some mails for testing')
+        lst_dfs = [read_n_mails(100)]
 
     else:
+        logger.info('reading all mails stored')
         lst_dfs = []
         for mail_count in range(TOTAL_MAILS // 200):
             lst_dfs.append(read_n_mails(200))
 
     all_mails_df = pd.concat(lst_dfs)
-    all_mails_df.to_csv('./temp/test1.csv', sep=',')
+    all_mails_df.to_csv('../../temp/test1.csv', sep='~')
+
+
+def format_text(text):
+    """
+    :param text: str
+    :return: str
+    will return a simplified format of the body with :: separated words
+    """
+    regex = re.compile('\s+')
+    list_of_words = regex.split(text)
+    formatted_text = ' '.join(list_of_words)
+    return formatted_text
+
+
+def format_address(text):
+    """
+    :param text: str
+    :return: str
+    extract the email address from sender/receiver details
+    """
+    regex = re.compile(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}', flags=re.IGNORECASE)
+    address = regex.findall(text)[0]
+    return address

@@ -1,1 +1,3 @@
-# gmail_organizer
+# GMail Organizer
+
+## Multioutput Classification of mails
