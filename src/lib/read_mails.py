@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Call the Gmail API
 service = build_service()
-TOTAL_MAILS = 800
+TOTAL_MAILS = 981
 
 
 def list_labels():
@@ -29,17 +29,42 @@ def list_labels():
 all_labels = list_labels()
 
 
-def read_n_mails(n=1):
+def read_n_mails(no_of_mails=1, max_mail_once=100):
     """
     give dataframe containing specified no of mails
-    :param n: int  #maximum 200
+    :param max_mail_once: int
+    :param no_of_mails: int
     :return: pd.DataFrame
     """
     mail_ctr = 0
     read_mails = 0
-    result = service.users().messages().list(maxResults=n, userId='me').execute()
-    # messages is a list of dictionaries where each dictionary contains a message id.
-    messages = result.get('messages')
+
+    # at maximum only 500 mails can be read once
+
+    if no_of_mails <= max_mail_once:
+        result = service.users().messages().list(maxResults=no_of_mails, userId='me').execute()
+        # messages is a list of dictionaries where each dictionary contains a message id.
+        messages = result.get('messages')
+
+    # if mails are more than 500, next page token is required for reading next page
+    else:
+        result = service.users().messages().list(maxResults=max_mail_once, userId='me').execute()
+        # messages is a list of dictionaries where each dictionary contains a message id.
+        messages = result.get('messages')
+        next_page_token = result.get('nextPageToken')
+        n = no_of_mails - max_mail_once
+        while n > 0:
+            logger.debug('using page tokens!')
+            no_of_results = max_mail_once if n >= max_mail_once else n
+            next_result = service.users().messages().list(
+                maxResults=no_of_results, userId='me', pageToken=next_page_token).execute()
+
+            messages.append(next_result.get('messages'))
+            if n // max_mail_once:
+                next_page_token = next_result.get('nextPageToken')
+
+            n //= max_mail_once
+
     # dictionary to store mails
     messages_dict = defaultdict(list)
     # labels_dict = {label: [] for label in all_labels}
@@ -114,10 +139,10 @@ def read_n_mails(n=1):
             logger.debug(f'read MailNo- {mail_ctr}')
             read_mails += 1
         except Exception as error:
-            logger.error(f'error was {error}')
+            logger.error(f'{error}')
             logger.debug(f'unable to read MailNo- {mail_ctr}')
 
-        logger.info(f'read {read_mails} out of {n} mails')
+        logger.info(f'read {read_mails} out of {no_of_mails} mails')
 
     # dataframe to store the messages
     messages_df = pd.DataFrame(messages_dict)
@@ -129,13 +154,11 @@ def read_n_mails(n=1):
 def store_all_mails(test_mode=False):
     if test_mode:
         logger.info('reading some mails for testing')
-        lst_dfs = [read_n_mails(10)]
+        lst_dfs = [read_n_mails(21, 5)]
 
     else:
         logger.info('reading all mails stored')
-        lst_dfs = []
-        for mail_count in range(TOTAL_MAILS // 200):
-            lst_dfs.append(read_n_mails(200))
+        lst_dfs = [read_n_mails(TOTAL_MAILS)]
 
     all_mails_df = pd.concat(lst_dfs)
     all_mails_df.to_csv('../../temp/test1.csv', sep='~')
