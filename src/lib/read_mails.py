@@ -148,7 +148,7 @@ def read_n_mails(no_of_mails):
     return messages_df
 
 
-def store_all_mails(no_of_mails=TOTAL_MAILS):
+def store_n_mails(no_of_mails=TOTAL_MAILS):
     """
     stores all mails into 1 csv at once
     :param no_of_mails: total mails to be read

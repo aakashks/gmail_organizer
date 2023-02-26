@@ -1,4 +1,4 @@
-from src.lib.read_mails import store_all_mails
+from src.lib.read_mails import store_n_mails
 import logging
 
 # setting up logger to see logs
@@ -7,5 +7,5 @@ logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     logger.info('main program started')
-    store_all_mails(51, 10, test_mode=True)
+    store_n_mails(501)
     logger.info('end program')
