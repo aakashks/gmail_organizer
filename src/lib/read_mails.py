@@ -92,7 +92,8 @@ def read_n_mails(n=1):
 
             # adding data in the dictionary
             messages_dict['id'].append(msg['id'])
-            messages_dict['date'].append(date)
+            # ignoring date as its format is unfit and its irrelevant
+            # messages_dict['date'].append(date)
             messages_dict['sender'].append(sender)
             messages_dict['receiver'].append(receiver)
             messages_dict['subject'].append(subject)
@@ -128,7 +129,7 @@ def read_n_mails(n=1):
 def store_all_mails(test_mode=False):
     if test_mode:
         logger.info('reading some mails for testing')
-        lst_dfs = [read_n_mails(100)]
+        lst_dfs = [read_n_mails(10)]
 
     else:
         logger.info('reading all mails stored')
@@ -156,8 +157,9 @@ def format_address(text):
     """
     :param text: str
     :return: str
-    extract the email address from sender/receiver details
+    extract the email addresses from sender/receiver details
     """
     regex = re.compile(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}', flags=re.IGNORECASE)
-    address = regex.findall(text)[0]
-    return address
+    address_list = regex.findall(text)
+    address_list_str = ','.join(address_list)
+    return address_list_str
