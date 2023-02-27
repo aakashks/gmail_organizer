@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 # Call the Gmail API
 service = build_service()
-TOTAL_MAILS = 800
+TOTAL_MAILS = 981
+MAX_MAIL_LIST = 500
 
 
 def list_labels():
@@ -29,17 +30,38 @@ def list_labels():
 all_labels = list_labels()
 
 
-def read_n_mails(n=1):
+def read_n_mails(no_of_mails):
     """
-    give dataframe containing specified no of mails
-    :param n: int  #maximum 200
+    gives a dataframe containing specified no of mails
+    :param no_of_mails: int
     :return: pd.DataFrame
     """
     mail_ctr = 0
     read_mails = 0
-    result = service.users().messages().list(maxResults=n, userId='me').execute()
-    # messages is a list of dictionaries where each dictionary contains a message id.
-    messages = result.get('messages')
+
+    # at maximum only 500 mails can be read once
+
+    if no_of_mails <= MAX_MAIL_LIST:
+        result = service.users().messages().list(maxResults=no_of_mails, userId='me').execute()
+        # messages is a list of dictionaries where each dictionary contains a message id.
+        messages = result.get('messages')
+
+    # if mails are more than 500, next page token is required for reading next page
+    else:
+        result = service.users().messages().list(maxResults=MAX_MAIL_LIST, userId='me').execute()
+        # messages is a list of dictionaries where each dictionary contains a message id.
+        messages = result.get('messages')
+        n = no_of_mails - MAX_MAIL_LIST
+        while n > 0:
+            next_page_token = result.get('nextPageToken')
+            logger.debug('using page tokens!')
+            no_of_results = MAX_MAIL_LIST if n >= MAX_MAIL_LIST else n
+            result = service.users().messages().list(
+                maxResults=no_of_results, userId='me', pageToken=next_page_token).execute()
+
+            messages.extend(result.get('messages'))
+            n = n - MAX_MAIL_LIST
+
     # dictionary to store mails
     messages_dict = defaultdict(list)
     # labels_dict = {label: [] for label in all_labels}
@@ -75,19 +97,22 @@ def read_n_mails(n=1):
             # The Body of the message is in Encrypted format. So, we have to decode it.
             # Get the data and decode it with base 64 decoder.
             if payload.get('parts'):
-                parts = payload.get('parts')[0]
-                data = parts['body']['data']
+                parts0 = payload.get('parts')[0]
+                if parts0.get('body').get('data'):
+                    data = parts0['body']['data']
+                elif parts0.get('parts')[1].get('body'):
+                    data = parts0.get('parts')[1].get('body').get('data')
+
             elif payload.get('body'):
                 data = payload.get('body')['data']
 
-            data = data.replace("-", "+").replace("_", "/")
             # decrypting the message body
-            decoded_data = base64.b64decode(data)
+            decoded_data = base64.b64decode(data, '-_')
 
             # Now, the data obtained is in lxml. So, we will parse
             # it with BeautifulSoup library
-            soup = BeautifulSoup(decoded_data, "lxml")
-            body = str(soup.body())[4:-5]
+            soup = BeautifulSoup(decoded_data, 'lxml')
+            body = soup.text
             formatted_body = format_text(body)
 
             # adding data in the dictionary
@@ -110,14 +135,13 @@ def read_n_mails(n=1):
             label_list_str = ','.join(list(labels))
             messages_dict['labels'].append(label_list_str)
 
-            logger.debug('read mail successfully')
             logger.debug(f'read MailNo- {mail_ctr}')
             read_mails += 1
         except Exception as error:
-            logger.error(f'error was {error}')
+            logger.error(f'{error}')
             logger.debug(f'unable to read MailNo- {mail_ctr}')
 
-        logger.info(f'read {read_mails} out of {n} mails')
+        logger.info(f'read {read_mails} out of {no_of_mails} mails')
 
     # dataframe to store the messages
     messages_df = pd.DataFrame(messages_dict)
@@ -126,26 +150,20 @@ def read_n_mails(n=1):
     return messages_df
 
 
-def store_all_mails(test_mode=False):
-    if test_mode:
-        logger.info('reading some mails for testing')
-        lst_dfs = [read_n_mails(10)]
-
-    else:
-        logger.info('reading all mails stored')
-        lst_dfs = []
-        for mail_count in range(TOTAL_MAILS // 200):
-            lst_dfs.append(read_n_mails(200))
-
-    all_mails_df = pd.concat(lst_dfs)
-    all_mails_df.to_csv('../../temp/test1.csv', sep='~')
+def store_n_mails(no_of_mails=TOTAL_MAILS):
+    """
+    stores all mails into 1 csv at once
+    :param no_of_mails: total mails to be read
+    :return: 
+    """
+    logger.info('reading all mails stored')
+    df = read_n_mails(no_of_mails)
+    df.to_csv('../../temp/training_data.csv', sep='~')
 
 
 def format_text(text):
     """
-    :param text: str
-    :return: str
-    will return a simplified format of the body with :: separated words
+    will return a simplified format of the body with space separated words
     """
     regex = re.compile('\s+')
     list_of_words = regex.split(text)
@@ -155,8 +173,6 @@ def format_text(text):
 
 def format_address(text):
     """
-    :param text: str
-    :return: str
     extract the email addresses from sender/receiver details
     """
     regex = re.compile(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}', flags=re.IGNORECASE)

@@ -18,6 +18,10 @@ SCOPES = [
 
 
 def build_service():
+    """
+    authorize user using gmail api and create service
+    :return:
+    """
 
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
