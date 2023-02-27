@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Call the Gmail API
 service = build_service()
-TOTAL_MAILS = 981
+TOTAL_MAILS = 993
 MAX_MAIL_LIST = 500
 
 
@@ -78,7 +78,7 @@ def read_n_mails(no_of_mails):
             read_mails += 1
         except Exception as error:
             logger.error(f'{error}')
-            logger.debug(f'unable to read MailNo- {mail_ctr}')
+            logger.debug(f'----------unable to read MailNo- {mail_ctr}--------------!!!!!')
 
         logger.info(f'read {read_mails} out of {no_of_mails} mails')
 
@@ -117,8 +117,10 @@ def read_mail(msg, messages_dict):
         parts0 = payload.get('parts')[0]
         if parts0.get('body').get('data'):
             data = parts0['body']['data']
-        elif parts0.get('parts')[1].get('body'):
+        elif parts0.get('parts')[1].get('body').get('data'):
             data = parts0.get('parts')[1].get('body').get('data')
+        elif parts0.get('parts')[1].get('parts')[0].get('body').get('data'):
+            data = parts0.get('parts')[1].get('parts')[0].get('body').get('data')
 
     elif payload.get('body'):
         data = payload.get('body')['data']
