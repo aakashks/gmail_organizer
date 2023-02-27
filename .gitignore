@@ -131,8 +131,12 @@ dmypy.json
 #pyCharm files
 .idea/
 
-#enron dataset
+#large files including training datasets
 data/enron_dataset.csv
+data/training_data.csv
 
 conf/credentials.json
 conf/token.json
+
+#temporary files
+temp/

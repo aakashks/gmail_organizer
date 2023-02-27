@@ -158,7 +158,7 @@ def store_n_mails(no_of_mails=TOTAL_MAILS):
     """
     logger.info('reading all mails stored')
     df = read_n_mails(no_of_mails)
-    df.to_csv('../../temp/training_data.csv', sep='~')
+    df.to_csv('../../data/training_data.csv', sep='~')
 
 
 def format_text(text):
