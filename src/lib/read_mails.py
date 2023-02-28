@@ -7,6 +7,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from src.lib.authorize import build_service
+from src.lib.set_labels import list_labels
 
 logger = logging.getLogger(__name__)
 
@@ -14,20 +15,6 @@ logger = logging.getLogger(__name__)
 service = build_service()
 TOTAL_MAILS = 993
 MAX_MAIL_LIST = 500
-
-
-def list_labels():
-    results = service.users().labels().list(userId='me').execute()
-    labels = results.get('labels', [])
-
-    if not labels:
-        return []
-
-    label_list = [label['name'] for label in labels]
-    return label_list
-
-
-all_labels = list_labels()
 
 
 def read_n_mails(no_of_mails):
