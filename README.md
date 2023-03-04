@@ -1,6 +1,6 @@
 # GMail Organizer
 
-## Multioutput Classification of mails using semi-supervised, active learning
+## Multioutput Classification of mails
 
 Yes, using machine learning to classify Gmail mails into different labels can be of practical use, even though Gmail already has a feature for creating filters. While Gmail's filtering feature is useful, it requires manual configuration by the user and can be time-consuming, especially when dealing with large volumes of email.
 
