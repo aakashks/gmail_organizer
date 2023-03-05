@@ -17,7 +17,7 @@ TOTAL_MAILS = 993
 MAX_MAIL_LIST = 500
 
 
-def read_n_mails(no_of_mails):
+def read_n_mails(no_of_mails: int) -> pd.DataFrame:
     """
     gives a dataframe containing specified no of mails
     :param no_of_mails: int
