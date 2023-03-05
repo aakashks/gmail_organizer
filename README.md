@@ -11,3 +11,16 @@ Additionally, machine learning can potentially provide more accurate and persona
 Overall, while Gmail's filtering feature is useful, machine learning can provide additional benefits such as automation, accuracy, and personalization, making it a practical and valuable tool for email classification.
 
 Also, many of IITR's mails are marked as important even though there are much less relevant. This issue will also be coped as only the emails preferred by the user will be marked as IMP(separate label for important mails).
+
+## Usage
+
+For Usage please see the [user guide](USER_GUIDE.md)
+
+## Limitations
+
+1. The Model has currently been trained on my IITR mailbox which had ~991 mails at that time.
+Given that I had quickly labeled only some particular categories of mails, the model gives predictions according to that only.
+Hence, one might observe that many mails will not be labeled by the model as they were
+similar to those mails which were not important for me and had not been labeled by me.
+Feature for active/ online learning might be added in the future.
+2. Currently only the body of any email is considered for classification.

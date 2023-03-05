@@ -138,5 +138,8 @@ data/training_data.csv
 conf/credentials.json
 conf/token.json
 
+#notebooks
+notebooks/enron_SVM_model.ipynb
+
 #temporary files
 temp/
