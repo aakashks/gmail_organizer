@@ -7,30 +7,17 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from src.lib.authorize import build_service
+from src.lib.set_labels import list_labels
 
 logger = logging.getLogger(__name__)
 
 # Call the Gmail API
 service = build_service()
-TOTAL_MAILS = 981
+TOTAL_MAILS = 993
 MAX_MAIL_LIST = 500
 
 
-def list_labels():
-    results = service.users().labels().list(userId='me').execute()
-    labels = results.get('labels', [])
-
-    if not labels:
-        return []
-
-    label_list = [label['name'] for label in labels]
-    return label_list
-
-
-all_labels = list_labels()
-
-
-def read_n_mails(no_of_mails):
+def read_n_mails(no_of_mails: int) -> pd.DataFrame:
     """
     gives a dataframe containing specified no of mails
     :param no_of_mails: int
@@ -73,73 +60,12 @@ def read_n_mails(no_of_mails):
         mail_ctr += 1
         # Use try-except to avoid any Errors
         try:
-            # Get the message from its id
-            txt = service.users().messages().get(userId='me', id=msg['id']).execute()
-
-            # Get value of 'payload' from dictionary 'txt'
-            payload = txt['payload']
-            headers = payload['headers']
-            # get list of labels of the email
-            labels = txt['labelIds']
-
-            # Look for metadata of Email in the headers
-            # which is a list of dictionaries
-            for d in headers:
-                if d['name'] == 'Date':
-                    date = d['value']
-                if d['name'] == 'Subject':
-                    subject = format_text(d['value'])
-                if d['name'] == 'From':
-                    sender = format_address(d['value'])
-                if d['name'] == 'To':
-                    receiver = format_address(d['value'])
-
-            # The Body of the message is in Encrypted format. So, we have to decode it.
-            # Get the data and decode it with base 64 decoder.
-            if payload.get('parts'):
-                parts0 = payload.get('parts')[0]
-                if parts0.get('body').get('data'):
-                    data = parts0['body']['data']
-                elif parts0.get('parts')[1].get('body'):
-                    data = parts0.get('parts')[1].get('body').get('data')
-
-            elif payload.get('body'):
-                data = payload.get('body')['data']
-
-            # decrypting the message body
-            decoded_data = base64.b64decode(data, '-_')
-
-            # Now, the data obtained is in lxml. So, we will parse
-            # it with BeautifulSoup library
-            soup = BeautifulSoup(decoded_data, 'lxml')
-            body = soup.text
-            formatted_body = format_text(body)
-
-            # adding data in the dictionary
-            messages_dict['id'].append(msg['id'])
-            # ignoring date as its format is unfit and its irrelevant
-            # messages_dict['date'].append(date)
-            messages_dict['sender'].append(sender)
-            messages_dict['receiver'].append(receiver)
-            messages_dict['subject'].append(subject)
-            messages_dict['body'].append(formatted_body)
-
-            # # filling up labels as a numerical data
-            # for label in all_labels:
-            #     if label in labels:
-            #         labels_dict[label].append('1')
-            #     else:
-            #         labels_dict[label].append('0')
-
-            # filling labels into one col as categorical data
-            label_list_str = ','.join(list(labels))
-            messages_dict['labels'].append(label_list_str)
-
+            _read_mail(msg, messages_dict)
             logger.debug(f'read MailNo- {mail_ctr}')
             read_mails += 1
         except Exception as error:
             logger.error(f'{error}')
-            logger.debug(f'unable to read MailNo- {mail_ctr}')
+            logger.debug(f'----------unable to read MailNo- {mail_ctr}--------------!!!!!')
 
         logger.info(f'read {read_mails} out of {no_of_mails} mails')
 
@@ -150,6 +76,72 @@ def read_n_mails(no_of_mails):
     return messages_df
 
 
+def _read_mail(msg, messages_dict):
+    # Get the message from its id
+    txt = service.users().messages().get(userId='me', id=msg['id']).execute()
+
+    # Get value of 'payload' from dictionary 'txt'
+    payload = txt['payload']
+    headers = payload['headers']
+    # get list of labels of the email
+    labels = txt['labelIds']
+
+    # Look for metadata of Email in the headers
+    # which is a list of dictionaries
+    for d in headers:
+        if d['name'] == 'Date':
+            date = d['value']
+        if d['name'] == 'Subject':
+            subject = format_text(d['value'])
+        if d['name'] == 'From':
+            sender = format_address(d['value'])
+        if d['name'] == 'To':
+            receiver = format_address(d['value'])
+
+    # The Body of the message is in Encrypted format. So, we have to decode it.
+    # Get the data and decode it with base 64 decoder.
+    if payload.get('parts'):
+        parts0 = payload.get('parts')[0]
+        if parts0.get('body').get('data'):
+            data = parts0['body']['data']
+        elif parts0.get('parts')[1].get('body').get('data'):
+            data = parts0.get('parts')[1].get('body').get('data')
+        elif parts0.get('parts')[1].get('parts')[0].get('body').get('data'):
+            data = parts0.get('parts')[1].get('parts')[0].get('body').get('data')
+
+    elif payload.get('body'):
+        data = payload.get('body')['data']
+
+    # decrypting the message body
+    decoded_data = base64.b64decode(data, '-_')
+
+    # Now, the data obtained is in lxml. So, we will parse
+    # it with BeautifulSoup library
+    soup = BeautifulSoup(decoded_data, 'lxml')
+    body = soup.text
+    formatted_body = format_text(body)
+
+    # adding data in the dictionary
+    messages_dict['id'].append(msg['id'])
+    # ignoring date as its format is unfit and its irrelevant
+    # messages_dict['date'].append(date)
+    messages_dict['sender'].append(sender)
+    messages_dict['receiver'].append(receiver)
+    messages_dict['subject'].append(subject)
+    messages_dict['body'].append(formatted_body)
+
+    # # filling up labels as a numerical data
+    # for label in all_labels:
+    #     if label in labels:
+    #         labels_dict[label].append('1')
+    #     else:
+    #         labels_dict[label].append('0')
+
+    # filling labels into one col as categorical data
+    label_list_str = ','.join(list(labels))
+    messages_dict['labels'].append(label_list_str)
+
+
 def store_n_mails(no_of_mails=TOTAL_MAILS):
     """
     stores all mails into 1 csv at once
@@ -158,7 +150,7 @@ def store_n_mails(no_of_mails=TOTAL_MAILS):
     """
     logger.info('reading all mails stored')
     df = read_n_mails(no_of_mails)
-    df.to_csv('../../temp/training_data.csv', sep='~')
+    df.to_csv('../../data/training_data.csv', sep='~')
 
 
 def format_text(text):

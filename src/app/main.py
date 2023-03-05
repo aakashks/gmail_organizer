@@ -1,4 +1,7 @@
-from src.lib.read_mails import store_n_mails
+from time import time
+
+from src.lib.ML import GenerateLabels
+from src.lib.read_mails import read_n_mails
 import logging
 
 # setting up logger to see logs
@@ -7,5 +10,8 @@ logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     logger.info('main program started')
-    store_n_mails(2)
-    logger.info('end program')
+    t0 = time()
+    sample_mails = read_n_mails(50)
+    knn_labeler = GenerateLabels()
+    print(knn_labeler.generate_labels(sample_mails))
+    logger.info(f'program finished in {time()-t0} seconds')
