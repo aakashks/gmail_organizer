@@ -60,7 +60,7 @@ def read_n_mails(no_of_mails: int) -> pd.DataFrame:
         mail_ctr += 1
         # Use try-except to avoid any Errors
         try:
-            read_mail(msg, messages_dict)
+            _read_mail(msg, messages_dict)
             logger.debug(f'read MailNo- {mail_ctr}')
             read_mails += 1
         except Exception as error:
@@ -76,7 +76,7 @@ def read_n_mails(no_of_mails: int) -> pd.DataFrame:
     return messages_df
 
 
-def read_mail(msg, messages_dict):
+def _read_mail(msg, messages_dict):
     # Get the message from its id
     txt = service.users().messages().get(userId='me', id=msg['id']).execute()
 
