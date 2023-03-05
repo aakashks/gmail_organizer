@@ -139,7 +139,7 @@ conf/credentials.json
 conf/token.json
 
 #notebooks
-notebooks/enron_SVM_model.ipynb
+notebooks/enron_model.ipynb
 
 #temporary files
 temp/
