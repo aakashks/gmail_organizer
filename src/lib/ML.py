@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from time import time
-from typing import List
+from typing import List, Tuple
 
 import joblib
 import numpy as np
@@ -77,7 +77,7 @@ class GenerateLabels(Preprocess):
         super().__init__()
         self.model = joblib.load(f'../../data/{model_name}_model.pkl')
 
-    def generate_labels(self, read_mails: pd.DataFrame) -> List[List[str]]:
+    def generate_labels(self, read_mails: pd.DataFrame) -> List[Tuple[str]]:
         """
         return labels for the given dataframe of mails
         """

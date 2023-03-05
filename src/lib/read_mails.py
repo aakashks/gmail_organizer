@@ -7,7 +7,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from src.lib.authorize import build_service
-from src.lib.set_labels import list_labels
 
 logger = logging.getLogger(__name__)
 
