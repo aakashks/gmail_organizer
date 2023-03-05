@@ -7,5 +7,5 @@ logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     logger.info('main program started')
-    store_n_mails()
+
     logger.info('end program')
