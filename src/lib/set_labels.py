@@ -1,7 +1,7 @@
 import logging
 import pickle
 from time import time
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import pandas as pd
 
@@ -31,10 +31,17 @@ def list_labels_from_old() -> Dict[str, str]:
     return labels_dict
 
 
+default_labels_list = [
+    key
+    for key, value in list_labels_from_old().values()
+    if key == value
+]
+
+
 def create_labels(): ...
 
 
-def set_label(msg_id: str, labels: tuple):
+def set_label(msg_id: str, labels: tuple, removeLabels=False):
     """
     will apply labels only on 1 mail
     """
@@ -43,10 +50,18 @@ def set_label(msg_id: str, labels: tuple):
         return
 
     logger.debug(f'applying label to msg id {msg_id}')
-    body = {
-        "removeLabelIds": [],
-        "addLabelIds": list(labels)
-    }
+
+    if removeLabels:
+        body = {
+            "removeLabelIds": list(labels),
+            "addLabelIds": []
+        }
+
+    else:
+        body = {
+            "removeLabelIds": [],
+            "addLabelIds": list(labels)
+        }
     service.users().messages().modify(userId='me', id=msg_id, body=body).execute()
     logger.info('label successfully applied')
 
@@ -71,3 +86,17 @@ def label_first_n_mails(n: int):
     """
     mails_df = read_n_mails(n)
     label_mails(mails_df)
+
+
+def reset_labels(mails_df: pd.DataFrame):
+
+    labels_list: List[Tuple[str]] = [
+        label
+        for st in mails_df['labels']
+        for label in st.split(',')
+        if label in default_labels_list
+    ]
+    # as default labels don't have to be removed
+
+    for i, msg_id in enumerate(mails_df['id']):
+        set_label(msg_id, labels_list[i], removeLabels=True)
