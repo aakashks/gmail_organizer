@@ -17,9 +17,10 @@ from sklearn.model_selection import cross_val_score, GridSearchCV, RandomizedSea
 from sklearn.preprocessing import StandardScaler
 from sklearn.compose import ColumnTransformer
 
-from conf.user_info import USER_EMAIL_ID
-
 logger = logging.getLogger(__name__)
+
+with open('../../conf/user_info.json') as file:
+    USER_EMAIL_ID = json.load(file)['USER_EMAIL_ID']
 
 
 def _encode_corpus_for_train(corpus: pd.Series, max_df=0.8, min_df=0.05) -> np.ndarray:

@@ -15,6 +15,7 @@ from src.lib.set_labels import label_mails, reset_labels
 #   python.exe setup
 
 # TODO: improve UI
+#   clear not working
 
 # TODO: add user customization things
 #   create my labels on user's mail
