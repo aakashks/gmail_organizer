@@ -1,15 +1,28 @@
-import re
-
-import numpy as np
-import pandas as pd
-
-from src.lib.set_labels import label_mails, reset_labels
-from src.lib.read_mails import read_n_mails
 import logging
+import re
 from typing import List
-from rich import print as rprint
-from rich.logging import RichHandler
+
 from rich.console import Console
+from rich.logging import RichHandler
+
+from src.lib.read_mails import read_n_mails
+from src.lib.set_labels import label_mails, reset_labels
+
+# TODO: fix config things
+#   fix import issue when not using pyCharm
+#   setup environment configuration
+#   if possible make a pvenv
+#   python.exe setup
+
+# TODO: improve UI
+
+# TODO: add user customization things
+#   create my labels on user's mail
+#   credentials.json setup
+#   choice of training on his own data and his labels(later)
+
+# TODO:
+#   cache mail storage
 
 # setting up logger to see logs
 logging.basicConfig(
@@ -22,32 +35,39 @@ logger = logging.getLogger(__name__)
 
 menu_message = """\
 MENU:
-    1: add labels to first n mails
-    2: list first n mails
+    1: list first n mails
+    2: add labels to first n mails
     3: add labels to only unread mails
     4: label specific mails
     5: reset added labels
     6: change maximum limit of mails to be read
-}
+    help | cls | exit
 """
 
 help_dict = {
     1: '',
     2: '',
-    3: """add labels to only unread mails
-    will check only first 500 mails for unread status
-    """,
+    3: '',
     4: '',
     5: '',
     6: ''
 }
 
-help_message = """
+help_message_end = """
 cls- clear the screen
 exit- to exit the application
+
+help - to get help for a particular option 
+        enter help and option no.
+        eg. help 1 (to view help of 1st option)
 """
 
-max_mails_limit = 500
+help_message = ''
+
+for option in help_dict:
+    help_message += str(option) + ': ' + help_dict[option]
+
+help_message += help_message_end
 
 
 def label_first_n_mails(n):
@@ -86,24 +106,25 @@ def label_unread_mails(n: int):
 
 console = Console()
 console.print(menu_message)
+max_mails_limit = int(console.input('enter maximum mails to be handled: '))
 n = max_mails_limit
 
 while True:
-    input_msg = console.input('gmail_organizer $ ')
+    input_msg = console.input('[bold green]gmail_organizer $ ')
 
     if input_msg == '1':
         n = int(console.input('enter no of mails: '))
         if n > max_mails_limit:
             logger.error('n is more than the max limit. pls change the limit')
             continue
-        label_first_n_mails(n)
+        display_mails(n)
 
     elif input_msg == '2':
         n = int(console.input('enter no of mails: '))
         if n > max_mails_limit:
             logger.error('n is more than the max limit. pls change the limit')
             continue
-        display_mails(n)
+        label_first_n_mails(n)
 
     elif input_msg == '3':
         label_unread_mails(max_mails_limit)
@@ -120,6 +141,9 @@ while True:
 
     elif input_msg == '6':
         max_mails_limit = int(console.input('enter new limit: '))
+
+    elif input_msg == 'menu':
+        console.print(menu_message)
 
     elif input_msg == 'cls':
         console.clear()

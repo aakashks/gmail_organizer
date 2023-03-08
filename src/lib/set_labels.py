@@ -1,7 +1,8 @@
 import logging
 import pickle
+import json
 from time import time
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 import pandas as pd
 
@@ -26,14 +27,16 @@ def store_list_of_labels():
 
 
 def list_labels_from_old() -> Dict[str, str]:
-    with open('../../data/label_dict.pickle', 'rb') as file:
-        labels_dict = pickle.load(file)
+    with open('../../data/label_dict.txt', 'r') as file:
+        label_str = file.read()
+
+    labels_dict = json.loads(label_str.replace('\'', '\"'))
     return labels_dict
 
 
 default_labels_list = [
     key
-    for key, value in list_labels_from_old().values()
+    for key, value in list_labels_from_old().items()
     if key == value
 ]
 
@@ -41,7 +44,7 @@ default_labels_list = [
 def create_labels(): ...
 
 
-def set_label(msg_id: str, labels: tuple, removeLabels=False):
+def set_label(msg_id: str, labels, removeLabels=False):
     """
     will apply labels only on 1 mail
     """
@@ -62,8 +65,12 @@ def set_label(msg_id: str, labels: tuple, removeLabels=False):
             "removeLabelIds": [],
             "addLabelIds": list(labels)
         }
-    service.users().messages().modify(userId='me', id=msg_id, body=body).execute()
-    logger.info('label successfully applied')
+    try:
+        service.users().messages().modify(userId='me', id=msg_id, body=body).execute()
+        logger.info('label successfully applied')
+    except Exception as error:
+        logger.debug('unable to remove label')
+        logger.error(error)
 
 
 def label_mails(mails_df: pd.DataFrame):
@@ -75,7 +82,7 @@ def label_mails(mails_df: pd.DataFrame):
     t0 = time()
     logger.info('model prediction started')
     labels_list = knn_label_generator.generate_labels(mails_df)
-    logger.info(f'model generated labels in {time()-t0} seconds')
+    logger.info(f'model generated labels in {time() - t0} seconds')
     for i, msg_id in enumerate(mails_df['id']):
         set_label(msg_id, labels_list[i])
 
@@ -89,12 +96,13 @@ def label_first_n_mails(n: int):
 
 
 def reset_labels(mails_df: pd.DataFrame):
-
-    labels_list: List[Tuple[str]] = [
-        label
+    labels_list: List[List[str]] = [
+        [
+            label
+            for label in st.split(',')
+            if label not in default_labels_list
+        ]
         for st in mails_df['labels']
-        for label in st.split(',')
-        if label in default_labels_list
     ]
     # as default labels don't have to be removed
 
