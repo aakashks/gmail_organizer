@@ -2,13 +2,13 @@ import logging
 import pickle
 import json
 from time import time
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List
 
 import pandas as pd
 
-from src.lib.ML import GenerateLabels
-from src.lib.authorize import build_service
-from src.lib.read_mails import read_n_mails
+from lib.ML import GenerateLabels
+from lib.authorize import build_service
+from lib.read_mails import read_n_mails
 
 service = build_service()
 logger = logging.getLogger(__name__)
@@ -22,12 +22,12 @@ def store_list_of_labels():
         return
 
     label_dict = {label['id']: label['name'] for label in labels}
-    with open('../../data/label_dict.pickle', 'wb') as file:
+    with open('data/label_dict.pickle', 'wb') as file:
         pickle.dump(label_dict, file)
 
 
 def list_labels_from_old() -> Dict[str, str]:
-    with open('../../data/label_dict.txt', 'r') as file:
+    with open('data/label_dict.txt', 'r') as file:
         label_str = file.read()
 
     labels_dict = json.loads(label_str.replace('\'', '\"'))
@@ -67,7 +67,7 @@ def set_label(msg_id: str, labels, removeLabels=False):
         }
     try:
         service.users().messages().modify(userId='me', id=msg_id, body=body).execute()
-        logger.info('label successfully applied')
+        logger.debug('label successfully applied')
     except Exception as error:
         logger.debug('unable to remove label')
         logger.error(error)

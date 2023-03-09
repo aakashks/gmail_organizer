@@ -19,7 +19,7 @@ from sklearn.compose import ColumnTransformer
 
 logger = logging.getLogger(__name__)
 
-with open('../../conf/user_info.json') as file:
+with open('conf/user_info.json') as file:
     USER_EMAIL_ID = json.load(file)['USER_EMAIL_ID']
 
 
@@ -29,13 +29,13 @@ def _encode_corpus_for_train(corpus: pd.Series, max_df=0.8, min_df=0.05) -> np.n
         min_df=min_df
     )
     encoded_corpus = tfidf.fit_transform(corpus).toarray()
-    joblib.dump(tfidf.vocabulary_, '../../data/tfidf_vocabulary.pkl')
+    joblib.dump(tfidf.vocabulary_, 'data/tfidf_vocabulary.pkl')
     return encoded_corpus
 
 
 class Preprocess:
     def __init__(self):
-        with open('../../data/label_dict.txt', 'r') as file:
+        with open('data/label_dict.txt', 'r') as file:
             label_str = file.read()
 
         self.labels_dict = json.loads(label_str.replace('\'', '\"'))
@@ -57,7 +57,7 @@ class Preprocess:
         return self.mlb.transform(labels_array)
 
     def _encode_corpus(self, message_body: pd.Series) -> np.ndarray:
-        vocab = joblib.load('../../data/tfidf_vocabulary.pkl')
+        vocab = joblib.load('data/tfidf_vocabulary.pkl')
         self.tfidf = TfidfVectorizer(vocabulary=vocab)
         encoded_corpus = self.tfidf.fit_transform(message_body).toarray()
         return encoded_corpus
@@ -76,7 +76,7 @@ class Preprocess:
 class GenerateLabels(Preprocess):
     def __init__(self, model_name='knn'):
         super().__init__()
-        self.model = joblib.load(f'../../data/{model_name}_model.pkl')
+        self.model = joblib.load(f'data/{model_name}_model.pkl')
 
     def generate_labels(self, read_mails: pd.DataFrame) -> List[Tuple[str]]:
         """
@@ -106,12 +106,12 @@ class FitModel(Preprocess):
         logger.info('training model')
         t0 = time()
         knn_clf.fit(encoded_message_body_df, encoded_labels_df)
-        joblib.dump(knn_clf, '../../data/knn_model.pkl')
+        joblib.dump(knn_clf, 'data/knn_model.pkl')
         logger.info(f'model saved! took {time() - t0} seconds')
 
 
 def train_and_dump_model():
-    df1 = pd.read_csv('../../data/training_data.csv', sep='~', index_col=0)
+    df1 = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
     knn_model = FitModel(df1)
     knn_model.knn_fit_and_dump()
 

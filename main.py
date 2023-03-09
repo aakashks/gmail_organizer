@@ -5,8 +5,8 @@ from typing import List
 from rich.console import Console
 from rich.logging import RichHandler
 
-from src.lib.read_mails import read_n_mails
-from src.lib.set_labels import label_mails, reset_labels
+from lib.read_mails import read_n_mails
+from lib.set_labels import label_mails, reset_labels
 
 # TODO: fix config things
 #   fix import issue when not using pyCharm
@@ -66,7 +66,7 @@ help - to get help for a particular option
 help_message = ''
 
 for option in help_dict:
-    help_message += str(option) + ': ' + help_dict[option]
+    help_message += str(option) + ': ' + help_dict[option] + '\n'
 
 help_message += help_message_end
 
@@ -111,7 +111,7 @@ max_mails_limit = int(console.input('enter maximum mails to be handled: '))
 n = max_mails_limit
 
 while True:
-    input_msg = console.input('[bold green]gmail_organizer $ ')
+    input_msg = console.input('[bold green]gmail_organizer >> ')
 
     if input_msg == '1':
         n = int(console.input('enter no of mails: '))
@@ -123,7 +123,7 @@ while True:
     elif input_msg == '2':
         n = int(console.input('enter no of mails: '))
         if n > max_mails_limit:
-            logger.error('n is more than the max limit. pls change the limit')
+            logger.warn('n is more than the max limit. pls change the limit')
             continue
         label_first_n_mails(n)
 
