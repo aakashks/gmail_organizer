@@ -44,13 +44,14 @@ default_labels_list = [
 def create_labels(): ...
 
 
-def set_label(msg_id: str, labels, removeLabels=False):
+def set_label(msg_id: str, labels, removeLabels=False) -> bool:
     """
     will apply labels only on 1 mail
+    :return: true if applied else false
     """
     if not labels:
         logger.debug('no label matches')
-        return
+        return False
 
     logger.debug(f'applying label to msg id {msg_id}')
 
@@ -68,9 +69,11 @@ def set_label(msg_id: str, labels, removeLabels=False):
     try:
         service.users().messages().modify(userId='me', id=msg_id, body=body).execute()
         logger.debug('label successfully applied')
+        return True
     except Exception as error:
-        logger.debug('unable to remove label')
+        logger.debug('unable to apply label')
         logger.error(error)
+        return False
 
 
 def label_mails(mails_df: pd.DataFrame):
@@ -83,8 +86,15 @@ def label_mails(mails_df: pd.DataFrame):
     logger.info('model prediction started')
     labels_list = knn_label_generator.generate_labels(mails_df)
     logger.info(f'model generated labels in {time() - t0} seconds')
+    ctr = 0
+
     for i, msg_id in enumerate(mails_df['id']):
-        set_label(msg_id, labels_list[i])
+        logger.debug(f'applying label to MailNo- {i}')
+        status = set_label(msg_id, labels_list[i])
+        if status:
+            ctr += 1
+    
+    logger.debug(f'labeled {ctr} mails out of {len(mails_df)}')
 
 
 def label_first_n_mails(n: int):

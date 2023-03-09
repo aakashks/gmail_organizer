@@ -66,7 +66,7 @@ class Preprocess:
         final_df = self._clean_email_df(df)
         return pd.DataFrame(self._encode_corpus(final_df['body']))
 
-    def get_training_data(self, df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    def get_training_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
         final_df = self._clean_email_df(df)
         encoded_corpus_df = pd.DataFrame(_encode_corpus_for_train(final_df['body']))
         encoded_labels_df = pd.DataFrame(self._encode_labels(final_df['labels']))

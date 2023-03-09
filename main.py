@@ -9,7 +9,6 @@ from lib.read_mails import read_n_mails
 from lib.set_labels import label_mails, reset_labels
 
 # TODO: fix config things
-#   fix import issue when not using pyCharm
 #   setup environment configuration
 #   if possible make a pvenv
 #   python.exe setup
@@ -35,7 +34,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 menu_message = """\
-MENU:
+MENU:     ###Enter full screen for best experience###
     1: list first n mails
     2: add labels to first n mails
     3: add labels to only unread mails
@@ -109,6 +108,8 @@ console = Console()
 console.print(menu_message)
 max_mails_limit = int(console.input('enter maximum mails to be handled: '))
 n = max_mails_limit
+# with console.status('[green]fetching mails..'):
+#     cached_mails_df = read_n_mails(max_mails_limit)
 
 while True:
     input_msg = console.input('[bold green]gmail_organizer >> ')
@@ -123,7 +124,7 @@ while True:
     elif input_msg == '2':
         n = int(console.input('enter no of mails: '))
         if n > max_mails_limit:
-            logger.warn('n is more than the max limit. pls change the limit')
+            logger.error('n is more than the max limit. pls change the limit')
             continue
         label_first_n_mails(n)
 

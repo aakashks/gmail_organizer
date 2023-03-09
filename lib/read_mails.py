@@ -22,7 +22,7 @@ def read_n_mails(no_of_mails: int) -> pd.DataFrame:
     :param no_of_mails: int
     :return: pd.DataFrame
     """
-    mail_ctr = 0
+    mail_ctr = -1
     read_mails = 0
 
     # at maximum only 500 mails can be read once
