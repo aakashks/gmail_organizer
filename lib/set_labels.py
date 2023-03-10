@@ -22,15 +22,14 @@ def store_list_of_labels():
         return
 
     label_dict = {label['id']: label['name'] for label in labels}
-    with open('data/label_dict.pickle', 'wb') as file:
-        pickle.dump(label_dict, file)
+    with open('data/label_dict.json', 'wb') as file:
+        json.dump(label_dict, file)
 
 
 def list_labels_from_old() -> Dict[str, str]:
-    with open('data/label_dict.txt', 'r') as file:
-        label_str = file.read()
+    with open('data/label_dict.json', 'r') as file:
+        labels_dict = json.load(file)
 
-    labels_dict = json.loads(label_str.replace('\'', '\"'))
     return labels_dict
 
 
