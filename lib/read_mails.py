@@ -6,7 +6,7 @@ from collections import defaultdict
 import pandas as pd
 from bs4 import BeautifulSoup
 
-from src.lib.authorize import build_service
+from lib.authorize import build_service
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def read_n_mails(no_of_mails: int) -> pd.DataFrame:
     :param no_of_mails: int
     :return: pd.DataFrame
     """
-    mail_ctr = 0
+    mail_ctr = -1
     read_mails = 0
 
     # at maximum only 500 mails can be read once
@@ -149,7 +149,7 @@ def store_n_mails(no_of_mails=TOTAL_MAILS):
     """
     logger.info('reading all mails stored')
     df = read_n_mails(no_of_mails)
-    df.to_csv('../../data/training_data.csv', sep='~')
+    df.to_csv('data/training_data.csv', sep='~')
 
 
 def format_text(text):
