@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import os.path
 from time import time
 from typing import List, Tuple
 
@@ -115,9 +116,13 @@ class FitModel(Preprocess):
 
 
 def train_and_dump_model():
-    df1 = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
-    knn_model = FitModel(df1)
-    knn_model.knn_fit_and_dump()
+    """
+    will train the model on training data and store the model
+    """
+    if os.path.exists('data/training_data.csv'):
+        df1 = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
+        knn_model = FitModel(df1)
+        knn_model.knn_fit_and_dump()
 
-
-# train_and_dump_model()
+    else:
+        logger.error('training data does not exist yet')

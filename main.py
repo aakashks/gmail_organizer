@@ -34,7 +34,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 menu_message = """\
-MENU:     ###Enter full screen for best experience###
+# MENU #   
     1: list first n mails
     2: add labels to first n mails
     3: add labels to only unread mails
@@ -42,6 +42,7 @@ MENU:     ###Enter full screen for best experience###
     5: reset added labels
     6: change maximum limit of mails to be read
     help | cls | exit
+    (Enter full screen for best experience)
 """
 
 help_dict = {

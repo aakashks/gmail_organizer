@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 def store_list_of_labels():
+    """
+    retrieve list of labels from user's Gmail and store them in a json file
+    """
     results = service.users().labels().list(userId='me').execute()
     labels = results.get('labels', [])
 
@@ -27,6 +30,9 @@ def store_list_of_labels():
 
 
 def list_labels_from_old() -> Dict[str, str]:
+    """
+    list the labels from the data which was stored
+    """
     with open('data/label_dict.json', 'r') as file:
         labels_dict = json.load(file)
 
