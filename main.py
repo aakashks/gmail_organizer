@@ -3,11 +3,12 @@ import re
 from time import time
 from typing import List
 
+import pandas as pd
 from rich.console import Console
 from rich.logging import RichHandler
 
 from lib.read_mails import read_n_mails, store_n_mails
-from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels
+from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels, list_labels_from_old
 from lib.ML import train_and_dump_model
 
 # TODO: fix config things
@@ -84,7 +85,20 @@ def label_first_n_mails(n):
 def display_mails(n):
     with console.status(f'[bold green]Reading {n} mails!'):
         mail_df = read_n_mails(n)
-        mail_df_relevant = mail_df.loc[:, ['sender', 'subject', 'labels']]
+        labels_dict = list_labels_from_old()
+
+        def label_filter(label_ids):
+            label_names = []
+            for label_id in label_ids:
+                if label_id == labels_dict[label_id] and label_id not in ['UNREAD', 'INBOX']:
+                    label_ids.remove(label_id)
+                else:
+                    label_names.append(labels_dict[label_id])
+
+            return ','.join(label_names)
+
+        mail_df['label names'] = mail_df['labels'].str.split(',').apply(label_filter)
+        mail_df_relevant = mail_df.loc[:, ['sender', 'subject', 'label names']]
         console.print(mail_df_relevant)
 
 
@@ -130,9 +144,21 @@ def train_model():
         console.log(f'Model trained in {time()-t1} seconds')
 
 
+label_name_list = [
+    value for key, value in list_labels_from_old().items() if re.match('Label_[0-9]', key)
+]
+
 console = Console()
 console.print(menu_message)
-max_mails_limit = int(console.input('enter maximum mails to be handled: '))
+
+while True:
+    limit_input = console.input('enter maximum mails to be handled: ')
+    if limit_input.isdigit():
+        max_mails_limit = int(limit_input)
+        break
+    else:
+        console.print('[red] please enter integer value')
+
 n = max_mails_limit
 # with console.status('[green]fetching mails..'):
 #     cached_mails_df = read_n_mails(max_mails_limit)
@@ -178,7 +204,14 @@ while True:
         train_model()
 
     elif input_msg == '9':
-        create_labels()
+        if not any(label_name_list):
+            create_labels()
+        else:
+            logger.warning('you already have some labels set up!')
+            console.log('you should make sure that their names are different from label names')
+            confirmation = console.input('do you really want to continue and create the labels? (yes/no)')
+            if confirmation == 'yes':
+                create_labels()
 
     elif input_msg == 'menu':
         console.print(menu_message)
