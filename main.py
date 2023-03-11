@@ -7,21 +7,14 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from lib.read_mails import read_n_mails, store_n_mails
-from lib.set_labels import label_mails, reset_labels, store_list_of_labels
+from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels
 from lib.ML import train_and_dump_model
 
 # TODO: fix config things
-#   setup environment configuration
-#   if possible make a pvenv
 #   python.exe setup
 
 # TODO: improve UI
 #   clear not working
-
-# TODO: add user customization things
-#   create my labels on user's mail
-#   credentials.json setup
-#   choice of training on his own data and his labels(later)
 
 # TODO:
 #   cache mail storage
@@ -45,6 +38,7 @@ menu_message = """\
     6: change maximum limit of mails to be read
     7: train model on your data
     8: use different model
+    9: create labels (for new user)
     help | cls | exit
     (Enter full screen for best experience)
 """
@@ -57,7 +51,8 @@ help_dict = {
     5: '',
     6: '',
     7: '',
-    8: ''
+    8: '',
+    9: ''
 }
 
 help_message_end = """
@@ -181,6 +176,9 @@ while True:
 
     elif input_msg == '8':
         train_model()
+
+    elif input_msg == '9':
+        create_labels()
 
     elif input_msg == 'menu':
         console.print(menu_message)

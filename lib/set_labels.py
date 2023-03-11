@@ -1,6 +1,8 @@
 import logging
 import pickle
 import json
+import re
+import os.path
 from time import time
 from typing import Dict, List
 
@@ -33,8 +35,11 @@ def list_labels_from_old() -> Dict[str, str]:
     """
     list the labels from the data which was stored
     """
-    with open('data/label_dict.json', 'r') as file:
-        labels_dict = json.load(file)
+    if os.path.exists('data/label_dict.json'):
+        with open('data/label_dict.json', 'r') as file:
+            labels_dict = json.load(file)
+    else:
+        logger.error('File labels_dict not found')
 
     return labels_dict
 
@@ -45,8 +50,29 @@ default_labels_list = [
     if key == value
 ]
 
+label_name_list = [
+    value for key, value in list_labels_from_old().items() if re.match('Label_[0-9]', key)
+]
 
-def create_labels(): ...
+
+def create_labels():
+    if not any(label_name_list):
+        try:
+            for label_name in label_name_list:
+                logger.debug('creating new label')
+                service.users().labels().create(
+                    userId='me', body={
+                        "name": label_name
+                    }
+                ).execute()
+            logger.info('all labels created successfully')
+
+        except:
+            logger.error('unable to create label', exc_info=True)
+
+    else:
+        logger.warning('''you already have some labels set up. 
+        you should make sure that their names are different from label names''')
 
 
 def set_label(msg_id: str, labels, removeLabels=False) -> bool:

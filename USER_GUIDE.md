@@ -11,3 +11,7 @@ to enable the Gmail API and generate OAuth Key.
     pip install -r requirements.txt
     ```
 4. Run `main.py`
+5. Either use the model trained on my mails. you have to create those labels by using 
+option 9 of menu \
+or you should label most of your mails and train the model on 
+your mails by using option 7 of menu
