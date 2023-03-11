@@ -24,3 +24,11 @@ Hence, one might observe that many mails will not be labeled by the model as the
 similar to those mails which were not important for me and had not been labeled by me.
 Feature for active/ online learning might be added in the future.
 2. Currently only the body of any email is considered for classification.
+
+## References
+[GMail API reference](https://developers.google.com/gmail/api/reference/rest/v1/users.messages)\
+[Rich library for colourful display](https://rich.readthedocs.io/en/stable/console.html)\
+[TFIDF vectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
+
+## Images
+![CLI look](assets/images/cli_display.png)
