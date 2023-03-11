@@ -56,23 +56,18 @@ label_name_list = [
 
 
 def create_labels():
-    if not any(label_name_list):
+    for label_name in label_name_list:
         try:
-            for label_name in label_name_list:
-                logger.debug('creating new label')
-                service.users().labels().create(
-                    userId='me', body={
-                        "name": label_name
-                    }
-                ).execute()
-            logger.info('all labels created successfully')
-
+            logger.debug('creating new label')
+            service.users().labels().create(
+                userId='me', body={
+                    "name": label_name
+                }
+            ).execute()
         except:
             logger.error('unable to create label', exc_info=True)
 
-    else:
-        logger.warning('''you already have some labels set up. 
-        you should make sure that their names are different from label names''')
+    logger.info('labels created successfully')
 
 
 def set_label(msg_id: str, labels, removeLabels=False) -> bool:
