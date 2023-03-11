@@ -29,6 +29,3 @@ Feature for active/ online learning might be added in the future.
 [GMail API reference](https://developers.google.com/gmail/api/reference/rest/v1/users.messages)\
 [Rich library for colourful display](https://rich.readthedocs.io/en/stable/console.html)\
 [TFIDF vectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
-
-## Images
-![CLI look](assets/images/cli_display.png)

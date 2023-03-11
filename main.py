@@ -15,7 +15,7 @@ from lib.ML import train_and_dump_model
 
 
 # setting up logger to see logs
-TEST_MODE = True
+TEST_MODE = False
 logging.basicConfig(
     level=logging.ERROR,
     format="%(message)s",
