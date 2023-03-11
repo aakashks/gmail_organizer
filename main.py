@@ -13,14 +13,6 @@ from lib.read_mails import read_n_mails, store_n_mails
 from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels, list_labels_from_old
 from lib.ML import train_and_dump_model
 
-# TODO: fix config things
-#   python.exe setup
-
-# TODO: improve UI
-#   clear not working
-
-# TODO:
-#   cache mail storage
 
 # setting up logger to see logs
 TEST_MODE = True
