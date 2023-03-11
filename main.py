@@ -44,6 +44,7 @@ menu_message = """\
     5: reset added labels
     6: change maximum limit of mails to be read
     7: train model on your data
+    8: use different model
     help | cls | exit
     (Enter full screen for best experience)
 """
@@ -55,7 +56,8 @@ help_dict = {
     4: '',
     5: '',
     6: '',
-    7: ''
+    7: '',
+    8: ''
 }
 
 help_message_end = """
@@ -109,7 +111,7 @@ def label_unread_mails(n: int):
     label_mails(unread_mails_df)
 
 
-def train_model():
+def store_user_data():
     """
     get user's training data and train model on that
     the data should be properly labeled
@@ -125,6 +127,8 @@ def train_model():
         store_n_mails(n_train_mails)
         console.log(f'Read and stored mails in {time()-t0} seconds')
 
+
+def train_model():
     t1 = time()
     with console.status('Training model'):
         train_and_dump_model()
@@ -172,6 +176,10 @@ while True:
         max_mails_limit = int(console.input('enter new limit: '))
 
     elif input_msg == '7':
+        store_user_data()
+        train_model()
+
+    elif input_msg == '8':
         train_model()
 
     elif input_msg == 'menu':
