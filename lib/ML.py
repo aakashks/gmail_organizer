@@ -41,8 +41,11 @@ def _encode_corpus_for_train(corpus: pd.Series, max_df=0.8, min_df=0.05) -> np.n
 
 class Preprocess:
     def __init__(self):
-        with open('data/label_dict.json', 'r') as file:
-            self.labels_dict = json.load(file)
+        if os.path.exists('data/label_dict.json'):
+            with open('data/label_dict.json', 'r') as file:
+                self.labels_dict = json.load(file)
+        else:
+            logger.error('File labels_dict not found')
 
         self.all_labels = [key for key in self.labels_dict.keys() if re.match('Label_[0-9]', key)]
 

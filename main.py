@@ -1,12 +1,14 @@
 import logging
 import re
+from time import time
 from typing import List
 
 from rich.console import Console
 from rich.logging import RichHandler
 
-from lib.read_mails import read_n_mails
-from lib.set_labels import label_mails, reset_labels
+from lib.read_mails import read_n_mails, store_n_mails
+from lib.set_labels import label_mails, reset_labels, store_list_of_labels
+from lib.ML import train_and_dump_model
 
 # TODO: fix config things
 #   setup environment configuration
@@ -41,6 +43,7 @@ menu_message = """\
     4: label specific mails
     5: reset added labels
     6: change maximum limit of mails to be read
+    7: train model on your data
     help | cls | exit
     (Enter full screen for best experience)
 """
@@ -51,7 +54,8 @@ help_dict = {
     3: '',
     4: '',
     5: '',
-    6: ''
+    6: '',
+    7: ''
 }
 
 help_message_end = """
@@ -105,6 +109,28 @@ def label_unread_mails(n: int):
     label_mails(unread_mails_df)
 
 
+def train_model():
+    """
+    get user's training data and train model on that
+    the data should be properly labeled
+    """
+    with console.status('Fetching labels'):
+        store_list_of_labels()
+        console.log('Labels stored')
+
+    n_train_mails = console.input('Enter total no of mails: ')
+
+    t0 = time()
+    with console.status(f'Reading mails'):
+        store_n_mails(n_train_mails)
+        console.log(f'Read and stored mails in {time()-t0} seconds')
+
+    t1 = time()
+    with console.status('Training model'):
+        train_and_dump_model()
+        console.log(f'Model trained in {time()-t1} seconds')
+
+
 console = Console()
 console.print(menu_message)
 max_mails_limit = int(console.input('enter maximum mails to be handled: '))
@@ -144,6 +170,9 @@ while True:
 
     elif input_msg == '6':
         max_mails_limit = int(console.input('enter new limit: '))
+
+    elif input_msg == '7':
+        train_model()
 
     elif input_msg == 'menu':
         console.print(menu_message)

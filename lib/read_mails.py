@@ -62,8 +62,8 @@ def read_n_mails(no_of_mails: int) -> pd.DataFrame:
             _read_mail(msg, messages_dict)
             logger.debug(f'read MailNo- {mail_ctr}')
             read_mails += 1
-        except Exception as error:
-            logger.error(f'{error}')
+        except:
+            logger.error('problem reading the mail', exc_info=True)
             logger.debug(f'----------unable to read MailNo- {mail_ctr}--------------!!!!!')
 
         logger.info(f'read {read_mails} out of {no_of_mails} mails')

@@ -25,7 +25,7 @@ def store_list_of_labels():
         return
 
     label_dict = {label['id']: label['name'] for label in labels}
-    with open('data/label_dict.json', 'wb') as file:
+    with open('data/label_dict.json', 'w') as file:
         json.dump(label_dict, file)
 
 
