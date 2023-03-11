@@ -2,10 +2,12 @@ import logging
 import re
 from time import time
 from typing import List
+from tabulate import tabulate
 
 import pandas as pd
 from rich.console import Console
 from rich.logging import RichHandler
+from rich.table import Table
 
 from lib.read_mails import read_n_mails, store_n_mails
 from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels, list_labels_from_old
@@ -21,8 +23,9 @@ from lib.ML import train_and_dump_model
 #   cache mail storage
 
 # setting up logger to see logs
+TEST_MODE = True
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.ERROR,
     format="%(message)s",
     datefmt="[%X]",
     handlers=[RichHandler()]
@@ -73,9 +76,19 @@ for option in help_dict:
 help_message += help_message_end
 
 
+def read_mails(n):
+    if not TEST_MODE:
+        read_n_mails(n)
+
+    else:
+        # temporary function for test purposes
+        df = pd.read_csv('data/training_data.csv', sep='~', index_col=0, nrows=n)
+        return df
+
+
 def label_first_n_mails(n):
     with console.status('[bold green]Working...') as status:
-        mails_df = read_n_mails(n)
+        mails_df = read_mails(n)
         console.log('[green]Finished reading mails!')
         label_mails(mails_df)
         console.log('[green]Finished labeling mails!')
@@ -84,7 +97,7 @@ def label_first_n_mails(n):
 
 def display_mails(n):
     with console.status(f'[bold green]Reading {n} mails!'):
-        mail_df = read_n_mails(n)
+        mail_df = read_mails(n)
         labels_dict = list_labels_from_old()
 
         def label_filter(label_ids):
@@ -97,13 +110,16 @@ def display_mails(n):
 
             return ','.join(label_names)
 
-        mail_df['label names'] = mail_df['labels'].str.split(',').apply(label_filter)
-        mail_df_relevant = mail_df.loc[:, ['sender', 'subject', 'label names']]
-        console.print(mail_df_relevant)
+        display_mail_df = mail_df.loc[:, ['sender', 'subject']]
+        display_mail_df['label names'] = mail_df['labels'].str.split(',').apply(label_filter)
+
+        # setting up word limit for display of subject line
+        display_mail_df['subject'] = display_mail_df['subject'].str.slice(0, 60)
+        console.print(tabulate(display_mail_df, headers='keys', tablefmt='psql'))
 
 
 def label_specific_mails(n: int, indices: List[int], resetLabels=False):
-    mail_df = read_n_mails(n)
+    mail_df = read_mails(n)
     specific_mails_df = mail_df.iloc[indices]
     if resetLabels:
         reset_labels(specific_mails_df)
@@ -115,7 +131,7 @@ def label_unread_mails(n: int):
     """
     labels unread mails out of first n mails
     """
-    mails_df = read_n_mails(n)
+    mails_df = read_mails(n)
     unread_mails_df = mails_df.loc[mails_df['labels'].str.contains('UNREAD', case=True)]
     label_mails(unread_mails_df)
 
@@ -161,7 +177,7 @@ while True:
 
 n = max_mails_limit
 # with console.status('[green]fetching mails..'):
-#     cached_mails_df = read_n_mails(max_mails_limit)
+#     cached_mails_df = read_mails(max_mails_limit)
 
 while True:
     input_msg = console.input('[bold green]gmail_organizer >> ')
