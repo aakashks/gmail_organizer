@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import os.path
 from time import time
 from typing import List, Tuple
 
@@ -19,11 +20,16 @@ from sklearn.compose import ColumnTransformer
 
 logger = logging.getLogger(__name__)
 
+# get user's information (email id)
 with open('conf/user_info.json') as file:
     USER_EMAIL_ID = json.load(file)['USER_EMAIL_ID']
 
 
 def _encode_corpus_for_train(corpus: pd.Series, max_df=0.8, min_df=0.05) -> np.ndarray:
+    """
+    convert corpus of words into tfidf vectorized matrix with vocabulary of the corpus
+    as a feature and each message as a row
+    """
     tfidf = TfidfVectorizer(
         max_df=max_df,
         min_df=min_df
@@ -35,10 +41,12 @@ def _encode_corpus_for_train(corpus: pd.Series, max_df=0.8, min_df=0.05) -> np.n
 
 class Preprocess:
     def __init__(self):
-        with open('data/label_dict.txt', 'r') as file:
-            label_str = file.read()
+        if os.path.exists('data/label_dict.json'):
+            with open('data/label_dict.json', 'r') as file:
+                self.labels_dict = json.load(file)
+        else:
+            logger.error('File labels_dict not found')
 
-        self.labels_dict = json.loads(label_str.replace('\'', '\"'))
         self.all_labels = [key for key in self.labels_dict.keys() if re.match('Label_[0-9]', key)]
 
         self.mlb = MultiLabelBinarizer(classes=self.all_labels)
@@ -111,9 +119,13 @@ class FitModel(Preprocess):
 
 
 def train_and_dump_model():
-    df1 = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
-    knn_model = FitModel(df1)
-    knn_model.knn_fit_and_dump()
+    """
+    will train the model on training data and store the model
+    """
+    if os.path.exists('data/training_data.csv'):
+        df1 = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
+        knn_model = FitModel(df1)
+        knn_model.knn_fit_and_dump()
 
-
-# train_and_dump_model()
+    else:
+        logger.error('training data does not exist yet')

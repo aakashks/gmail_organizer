@@ -1,6 +1,8 @@
 import logging
 import pickle
 import json
+import re
+import os.path
 from time import time
 from typing import Dict, List
 
@@ -15,6 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 def store_list_of_labels():
+    """
+    retrieve list of labels from user's Gmail and store them in a json file
+    """
     results = service.users().labels().list(userId='me').execute()
     labels = results.get('labels', [])
 
@@ -22,15 +27,20 @@ def store_list_of_labels():
         return
 
     label_dict = {label['id']: label['name'] for label in labels}
-    with open('data/label_dict.pickle', 'wb') as file:
-        pickle.dump(label_dict, file)
+    with open('data/label_dict.json', 'w') as file:
+        json.dump(label_dict, file)
 
 
 def list_labels_from_old() -> Dict[str, str]:
-    with open('data/label_dict.txt', 'r') as file:
-        label_str = file.read()
+    """
+    list the labels from the data which was stored
+    """
+    if os.path.exists('data/label_dict.json'):
+        with open('data/label_dict.json', 'r') as file:
+            labels_dict = json.load(file)
+    else:
+        logger.error('File labels_dict not found')
 
-    labels_dict = json.loads(label_str.replace('\'', '\"'))
     return labels_dict
 
 
@@ -40,8 +50,24 @@ default_labels_list = [
     if key == value
 ]
 
+label_name_list = [
+    value for key, value in list_labels_from_old().items() if re.match('Label_[0-9]', key)
+]
 
-def create_labels(): ...
+
+def create_labels():
+    for label_name in label_name_list:
+        try:
+            logger.debug('creating new label')
+            service.users().labels().create(
+                userId='me', body={
+                    "name": label_name
+                }
+            ).execute()
+        except:
+            logger.error('unable to create label', exc_info=True)
+
+    logger.info('labels created successfully')
 
 
 def set_label(msg_id: str, labels, removeLabels=False) -> bool:
