@@ -14,7 +14,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -128,5 +127,15 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-#enron dataset
+# datasets
 enron_dataset.csv
+training_data.csv
+
+# pycharm files
+.idea/
+
+# user secrets
+conf/
+
+# other temporary files
+temp/
