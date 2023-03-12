@@ -70,7 +70,7 @@ help_message += help_message_end
 
 def read_mails(n):
     if not TEST_MODE:
-        read_n_mails(n)
+        return read_n_mails(n)
 
     else:
         # temporary function for test purposes
@@ -111,21 +111,24 @@ def display_mails(n):
 
 
 def label_specific_mails(n: int, indices: List[int], resetLabels=False):
-    mail_df = read_mails(n)
-    specific_mails_df = mail_df.iloc[indices]
-    if resetLabels:
-        reset_labels(specific_mails_df)
-    else:
-        label_mails(specific_mails_df)
-
+    with console.status('[bold green]Working...!'):
+        mail_df = read_mails(n)
+        specific_mails_df = mail_df.iloc[indices]
+        if resetLabels:
+            reset_labels(specific_mails_df)
+        else:
+            label_mails(specific_mails_df)
+    console.log('[red]Done!')
 
 def label_unread_mails(n: int):
     """
     labels unread mails out of first n mails
     """
-    mails_df = read_mails(n)
-    unread_mails_df = mails_df.loc[mails_df['labels'].str.contains('UNREAD', case=True)]
-    label_mails(unread_mails_df)
+    with console.status('[bold green]Working...!'):
+        mails_df = read_mails(n)
+        unread_mails_df = mails_df.loc[mails_df['labels'].str.contains('UNREAD', case=True)]
+        label_mails(unread_mails_df)
+    console.log('[red]Done!')
 
 
 def store_user_data():
@@ -137,19 +140,20 @@ def store_user_data():
         store_list_of_labels()
         console.log('Labels stored')
 
-    n_train_mails = console.input('Enter total no of mails: ')
+    n_train_mails = int(console.input('Enter total no of mails in your mailbox: '))
 
     t0 = time()
-    with console.status(f'Reading mails'):
+    with console.status(f'Reading mails...'):
+        console.log('[blue]It takes about 5-6 minutes per 1000 mails')
         store_n_mails(n_train_mails)
-        console.log(f'Read and stored mails in {time()-t0} seconds')
+        console.log(f'[yellow]Read and stored mails in {time()-t0} seconds')
 
 
 def train_model():
     t1 = time()
     with console.status('Training model'):
         train_and_dump_model()
-        console.log(f'Model trained in {time()-t1} seconds')
+        console.log(f'[yellow]Model trained in {time()-t1} seconds')
 
 
 label_name_list = [
@@ -187,6 +191,7 @@ while True:
             logger.error('n is more than the max limit. pls change the limit')
             continue
         label_first_n_mails(n)
+        display_mails(n)
 
     elif input_msg == '3':
         label_unread_mails(max_mails_limit)
@@ -205,6 +210,10 @@ while True:
         max_mails_limit = int(console.input('enter new limit: '))
 
     elif input_msg == '7':
+        input_msg = console.input('Have you created the labels (yes/no)? ')
+        if input_msg != 'yes':
+            console.print('please create labels using option 9!')
+            continue
         store_user_data()
         train_model()
 
@@ -212,14 +221,16 @@ while True:
         train_model()
 
     elif input_msg == '9':
-        if not any(label_name_list):
-            create_labels()
-        else:
-            logger.warning('you already have some labels set up!')
-            console.log('you should make sure that their names are different from label names')
-            confirmation = console.input('do you really want to continue and create the labels? (yes/no)')
-            if confirmation == 'yes':
+        with console.status('Creating labels...'):
+            if not any(label_name_list):
                 create_labels()
+            else:
+                logger.warning('you already have some labels set up!')
+                console.log('you should make sure that their names are different from label names')
+                confirmation = console.input('do you really want to continue and create the labels? (yes/no)')
+                if confirmation == 'yes':
+                    create_labels()
+            console.log('[red]Done')
 
     elif input_msg == 'menu':
         console.print(menu_message)
