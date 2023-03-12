@@ -4,7 +4,7 @@
 [here](https://developers.google.com/gmail/api/quickstart/python)
 to enable the Gmail API and generate OAuth Key.
 2. Add the credentials of Gmail API OAuth key in `conf/credentials.json`
-3. Use the resulting `requirements.txt` to create a pip virtual environment:
+3. Use the `requirements.txt` to create a pip virtual environment:
     ```
     python3 -m venv env
     source env/bin/activate
