@@ -17,7 +17,7 @@ from lib.ML import train_and_dump_model
 # setting up logger to see logs
 TEST_MODE = False
 logging.basicConfig(
-    level=logging.ERROR,
+    level=logging.DEBUG if TEST_MODE else logging.ERROR,
     format="%(message)s",
     datefmt="[%X]",
     handlers=[RichHandler()]
@@ -221,16 +221,19 @@ while True:
         train_model()
 
     elif input_msg == '9':
-        with console.status('Creating labels...'):
-            if not any(label_name_list):
-                create_labels()
-            else:
-                logger.warning('you already have some labels set up!')
-                console.log('you should make sure that their names are different from label names')
-                confirmation = console.input('do you really want to continue and create the labels? (yes/no)')
-                if confirmation == 'yes':
+        if not any(label_name_list):
+            create_labels()
+        else:
+            logger.warning('you already have some labels set up!')
+            console.log('''[red]Any old label with same name will be left as it is.
+            but they will be used to label mails.
+            other old labels will have no effect''')
+            confirmation = console.input('do you still want to continue and create the labels (yes/no)? ')
+
+            if confirmation == 'yes':
+                with console.status('Creating labels...'):
                     create_labels()
-            console.log('[red]Done')
+                console.log('[red]Done')
 
     elif input_msg == 'menu':
         console.print(menu_message)

@@ -14,6 +14,7 @@ from lib.read_mails import read_n_mails
 
 service = build_service()
 logger = logging.getLogger(__name__)
+EXC_INFO = False
 
 
 def store_list_of_labels():
@@ -65,7 +66,7 @@ def create_labels():
                 }
             ).execute()
         except:
-            logger.error('unable to create label', exc_info=True)
+            logger.error('unable to create label', exc_info=EXC_INFO)
 
     logger.info('labels created successfully')
 

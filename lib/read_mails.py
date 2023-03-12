@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 service = build_service()
 TOTAL_MAILS = 993
 MAX_MAIL_LIST = 500
+EXC_INFO = False
 
 
 def read_n_mails(no_of_mails: int) -> pd.DataFrame:
@@ -63,7 +64,7 @@ def read_n_mails(no_of_mails: int) -> pd.DataFrame:
             logger.debug(f'read MailNo- {mail_ctr}')
             read_mails += 1
         except:
-            logger.error('problem reading the mail', exc_info=True)
+            logger.error('problem reading the mail', exc_info=EXC_INFO)
             logger.debug(f'----------unable to read MailNo- {mail_ctr}--------------!!!!!')
 
         logger.info(f'read {read_mails} out of {no_of_mails} mails')

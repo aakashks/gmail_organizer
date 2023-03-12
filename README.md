@@ -26,6 +26,8 @@ Feature for active/ online learning might be added in the future.
 2. Currently only the body of any email is considered for classification.
 3. Some mails cannot be read as their parsed json data format doesn't match
 one of the predefined ones.
+4. Due to some reasons many features work exclusively on IITR gmail accounts
+and some functionalities are restricted in other gmail accounts.
 
 ## References
 [GMail API reference](https://developers.google.com/gmail/api/reference/rest/v1/users.messages)\
