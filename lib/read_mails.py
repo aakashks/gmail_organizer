@@ -156,10 +156,8 @@ def format_text(text):
     """
     will return a simplified format of the body with space separated words
     """
-    regex = re.compile('\s+')
-    list_of_words = regex.split(text)
-    formatted_text = ' '.join(list_of_words)
-    return formatted_text
+    # remove tilda as it is the delimiter and any extra whitespace
+    return re.sub(r'[\s~]+', ' ', text).strip()
 
 
 def format_address(text):
