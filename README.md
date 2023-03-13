@@ -23,10 +23,9 @@ Given that I had quickly labeled only some particular categories of mails, the m
 Hence, one might observe that many mails will not be labeled by the model as they were
 similar to those mails which were not important for me and had not been labeled by me.
 Feature for active/ online learning might be added in the future.
-2. Currently only the body of any email is considered for classification.
-3. Some mails cannot be read as their parsed json data format doesn't match
+2. Some mails cannot be read as their parsed json data format doesn't match
 one of the predefined ones.
-4. Due to some reasons many features work exclusively on IITR gmail accounts
+3. Due to some reasons many features work exclusively on IITR gmail accounts
 and some functionalities are restricted in other gmail accounts.
 
 ## References
