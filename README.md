@@ -14,20 +14,7 @@ Also, many of IITR's mails are marked as important even though there are much le
 
 ## Usage
 
-For Usage please see the [user guide](USER_GUIDE.md)
-
-## Limitations
-
-1. The Model has currently been trained on my IITR mailbox which had ~991 mails at that time.
-Given that I had quickly labeled only some particular categories of mails, the model gives predictions according to that only.
-Hence, one might observe that many mails will not be labeled by the model as they were
-similar to those mails which were not important for me and had not been labeled by me.
-Feature for active/ online learning might be added in the future.
-2. Currently only the body of any email is considered for classification.
-3. Some mails cannot be read as their parsed json data format doesn't match
-one of the predefined ones.
-4. Due to some reasons many features work exclusively on IITR gmail accounts
-and some functionalities are restricted in other gmail accounts.
+For usage please see the [user guide](USER_GUIDE.md)
 
 ## References
 [GMail API reference](https://developers.google.com/gmail/api/reference/rest/v1/users.messages)\
