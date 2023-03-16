@@ -15,7 +15,8 @@ from lib.ML import train_and_dump_model
 
 
 # setting up logger to see logs
-TEST_MODE = False
+TEST_MODE = True
+READ_REAL_DATA = True
 logging.basicConfig(
     level=logging.DEBUG if TEST_MODE else logging.ERROR,
     format="%(message)s",
@@ -69,7 +70,7 @@ help_message += help_message_end
 
 
 def read_mails(n):
-    if not TEST_MODE:
+    if not READ_REAL_DATA:
         return read_n_mails(n)
 
     else:
