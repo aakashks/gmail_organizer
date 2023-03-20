@@ -1,15 +1,15 @@
 import json
+import re
 
+import numpy as np
 import pandas as pd
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from sklearn.compose import ColumnTransformer
-from nltk.corpus import wordnet, stopwords
+from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sklearn.cluster import KMeans
-import re
+from sklearn.compose import ColumnTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
 
 # get user's information (email id)
 with open('conf/user_info.json') as file:
@@ -19,12 +19,11 @@ with open('conf/user_info.json') as file:
 def preprocess_data(mails_df: pd.DataFrame):
     condition = mails_df['sender'] == f'{USER_EMAIL_ID}'
     mails_df.drop(mails_df[condition].index, inplace=True)
-    mails_df_reindexed = mails_df.reset_index(drop=True)
+    mails_df = mails_df.reset_index(drop=True)
     imputer = SimpleImputer(strategy='constant', fill_value='')
     mails_df = pd.DataFrame(imputer.fit_transform(mails_df), columns=mails_df.columns)
 
     stop_words = set(stopwords.words('english'))
-
     lemmatizer = WordNetLemmatizer()
 
     def preprocess_text(text):
@@ -37,7 +36,7 @@ def preprocess_data(mails_df: pd.DataFrame):
 
     def preprocess_sender(address):
         address = address.lower()
-        address = re.sub('[.]ac[.]in|[.]com', '', address)
+        address = re.sub('[.]ac|[.]in|[.]com', '', address)
         address = re.sub('@|[.]', ' ', address)
         return address
 
@@ -54,7 +53,7 @@ def preprocess_data(mails_df: pd.DataFrame):
     return pipeline.fit_transform(mails_df)
 
 
-def cluster_mails(preprocessed_data):
+def cluster_mails(preprocessed_data) -> np.ndarray:
 
     k = 25
     model = KMeans(n_clusters=k, random_state=42)

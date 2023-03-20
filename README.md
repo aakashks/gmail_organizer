@@ -1,6 +1,7 @@
 # GMail Organizer v2.0
 
-## MultiClass Classification of mails using semi-supervised machine learning
+## MultiOutput Classification of Gmails
+using semi-supervised, active Machine Learning
 
 ## Usage
 
