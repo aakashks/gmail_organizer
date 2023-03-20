@@ -17,6 +17,9 @@ with open('conf/user_info.json') as file:
 
 
 def preprocess_data(mails_df: pd.DataFrame):
+    """
+    :return: scipy sparse matrix
+    """
     condition = mails_df['sender'] == f'{USER_EMAIL_ID}'
     mails_df.drop(mails_df[condition].index, inplace=True)
     mails_df = mails_df.reset_index(drop=True)
@@ -35,10 +38,11 @@ def preprocess_data(mails_df: pd.DataFrame):
         return processed_text
 
     def preprocess_sender(address):
-        address = address.lower()
-        address = re.sub('[.]ac|[.]in|[.]com', '', address)
-        address = re.sub('@|[.]', ' ', address)
-        return address
+        address_lst = address.lower().split('@')
+        address_lst[1] = re.sub('[.]ac|[.]in|[.]com', '', address_lst[1])
+        address_lst[1] = re.sub('[.]', ' ', address_lst[1])
+        address_lst[0] = re.sub('[._]', '', address_lst[0])
+        return ' '.join(address_lst)
 
     preprocessor = ColumnTransformer(transformers=[
         ('subject', TfidfVectorizer(preprocessor=preprocess_text, min_df=0.01), 'subject'),
