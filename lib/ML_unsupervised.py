@@ -30,6 +30,9 @@ def preprocess_data(mails_df: pd.DataFrame):
     lemmatizer = WordNetLemmatizer()
 
     def preprocess_text(text):
+        """
+        removes any special character
+        """
         text = text.lower()
         text = re.sub('[^a-zA-Z]', ' ', text)
         tokens = text.split()
@@ -38,12 +41,17 @@ def preprocess_data(mails_df: pd.DataFrame):
         return processed_text
 
     def preprocess_sender(address):
+        """
+        will separate domain name from the sender's address
+        also separate department so that it has effect in the model
+        """
         address_lst = address.lower().split('@')
         address_lst[1] = re.sub('[.]ac|[.]in|[.]com', '', address_lst[1])
         address_lst[1] = re.sub('[.]', ' ', address_lst[1])
         address_lst[0] = re.sub('[._]', '', address_lst[0])
         return ' '.join(address_lst)
 
+    # Transform particular columns into vectors
     preprocessor = ColumnTransformer(transformers=[
         ('subject', TfidfVectorizer(preprocessor=preprocess_text, min_df=0.01), 'subject'),
         ('body', TfidfVectorizer(preprocessor=preprocess_text, max_df=0.9, min_df=0.1), 'body'),
