@@ -12,6 +12,7 @@ import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from scipy.sparse import hstack, csr_matrix
+from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.neighbors import KNeighborsClassifier
@@ -178,3 +179,20 @@ def train_and_dump_model():
 
     else:
         logger.error('training data does not exist yet')
+
+
+def cluster_mails(preprocessed_data) -> np.ndarray:
+
+    k = 25
+    model = KMeans(n_clusters=k, random_state=42)
+    predicted_labels = model.fit_predict(preprocessed_data)
+    return predicted_labels
+
+
+def propagate_labels(original_labels, predicted_labels_int, n_clusters):
+    propagated_labels = pd.Series([], name='propagated_labels', dtype='object')
+    return
+
+
+if __name__ == '__main__':
+    train_and_dump_model()
