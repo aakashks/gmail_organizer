@@ -1,61 +1,101 @@
+import dill
 import json
 import logging
-import re
 import os.path
+import re
 from time import time
 from typing import List, Tuple
 
 import joblib
 import numpy as np
 import pandas as pd
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from scipy.sparse import hstack, csr_matrix
+from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.pipeline import Pipeline
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.model_selection import cross_val_score, GridSearchCV, RandomizedSearchCV, train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.compose import ColumnTransformer
 
 logger = logging.getLogger(__name__)
 
 # get user's information (email id)
-with open('conf/user_info.json') as file:
-    USER_EMAIL_ID = json.load(file)['USER_EMAIL_ID']
+USER_EMAIL_ID = json.load(open('conf/user_info.json'))['USER_EMAIL_ID']
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
 
 
-def _encode_corpus_for_train(corpus: pd.Series, max_df=0.8, min_df=0.05) -> np.ndarray:
+def preprocess_text(text):
+    """
+    removes any special character
+    """
+    text = text.lower()
+    text = re.sub('[^a-zA-Z,]', ' ', text)
+    tokens = text.split()
+    tokens = [token for token in tokens if token not in stop_words]
+    processed_text = ' '.join([lemmatizer.lemmatize(token) for token in tokens])
+    return processed_text
+
+
+def preprocess_sender(address):
+    """
+    will separate domain name from the sender's address
+    also separate department so that it has effect in the model
+    """
+    address_lst = address.lower().split('@')
+    address_lst[1] = re.sub('[.]ac|[.]in|[.]com', '', address_lst[1])
+    address_lst[1] = re.sub('[.]', ' ', address_lst[1])
+    address_lst[0] = re.sub('[._]', '', address_lst[0])
+    return ' '.join(address_lst)
+
+
+def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> csr_matrix:
     """
     convert corpus of words into tfidf vectorized matrix with vocabulary of the corpus
     as a feature and each message as a row
     """
-    tfidf = TfidfVectorizer(
-        max_df=max_df,
-        min_df=min_df
-    )
-    encoded_corpus = tfidf.fit_transform(corpus).toarray()
-    joblib.dump(tfidf.vocabulary_, 'data/tfidf_vocabulary.pkl')
-    return encoded_corpus
+    # checking for column names
+    if not [col in df for col in ['sender', 'sender', 'body']]:
+        logger.error('dataframe doesnt contain required column names')
+        raise Exception
+
+    # Creating Tfidf Vectorizers for all the 3 fields
+    subject_tfidf = TfidfVectorizer(preprocessor=preprocess_text, min_df=0.01)
+    body_tfidf = TfidfVectorizer(preprocessor=preprocess_text, max_df=max_df, min_df=min_df)
+    sender_tfidf = TfidfVectorizer(preprocessor=preprocess_sender)
+
+    # fitting and transforming the respective features of dataframe into sparse matrices
+    subject_vectors = subject_tfidf.fit_transform(df['subject'])
+    body_vectors = body_tfidf.fit_transform(df['body'])
+    sender_vectors = sender_tfidf.fit_transform(df['sender'])
+
+    # concatenating sparse matrices
+    feature_matrix = hstack((subject_vectors, body_vectors, sender_vectors))
+
+    # dump tfidf vectorizers to reuse vocabulary
+    vectorizers = [sender_tfidf, body_tfidf, subject_tfidf]
+    # using dill as it will also serialize the user defined preprocessing functions
+    dill.dump(vectorizers, open('data/TfidfVectorizers.pkl', 'wb'))
+    return feature_matrix
 
 
 class Preprocess:
     def __init__(self):
-        if os.path.exists('data/label_dict.json'):
-            with open('data/label_dict.json', 'r') as file:
-                self.labels_dict = json.load(file)
+        self.mlb = joblib.load('data/multiLabelBinarizer.pkl')
+        # checking if file exists or not
+        if os.path.exists('data/TfidfVectorizers.pkl'):
+            self.tfidf = dill.load(open('data/TfidfVectorizers.pkl', 'rb'))
+
         else:
-            logger.error('File labels_dict not found')
-
-        self.all_labels = [key for key in self.labels_dict.keys() if re.match('Label_[0-9]', key)]
-
-        self.mlb = MultiLabelBinarizer(classes=self.all_labels)
-        self.mlb.fit(self.all_labels)
+            self.tfidf = None
 
     def _clean_email_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        # to remove emails sent by the user himself
         condition = df['sender'] == f'{USER_EMAIL_ID}'
         df.drop(df[condition].index, inplace=True)
         df_reindexed = df.reset_index(drop=True)
+
+        # filling null values with empty string
         imputer = SimpleImputer(strategy='constant', fill_value='')
         final_df = pd.DataFrame(imputer.fit_transform(df_reindexed), columns=df_reindexed.columns)
         return final_df
@@ -64,20 +104,37 @@ class Preprocess:
         labels_array = [list(st.split(',')) for st in label_series]
         return self.mlb.transform(labels_array)
 
-    def _encode_corpus(self, message_body: pd.Series) -> np.ndarray:
-        vocab = joblib.load('data/tfidf_vocabulary.pkl')
-        self.tfidf = TfidfVectorizer(vocabulary=vocab)
-        encoded_corpus = self.tfidf.fit_transform(message_body).toarray()
-        return encoded_corpus
+    def _encode_corpus(self, df: pd.DataFrame) -> csr_matrix:
+        # checking for column names
+        if not [col in df for col in ['sender', 'sender', 'body']]:
+            logger.error('dataframe doesnt contain required column names')
+            raise Exception
 
-    def get_encoded_corpus(self, df: pd.DataFrame) -> pd.DataFrame:
-        final_df = self._clean_email_df(df)
-        return pd.DataFrame(self._encode_corpus(final_df['body']))
+        # unpacking loaded tfidf
+        if self.tfidf:
+            logger.error('tfidf not loaded. should use get_encoded_corpus_for_train')
+            raise ValueError
 
-    def get_training_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        sender_tfidf, subject_tfidf, body_tfidf = self.tfidf
+
+        # fitting and transforming the respective features of dataframe into sparse matrices
+        subject_vectors = subject_tfidf.transform(df['subject'])
+        body_vectors = body_tfidf.transform(df['body'])
+        sender_vectors = sender_tfidf.transform(df['sender'])
+
+        # concatenating sparse matrices
+        feature_matrix = hstack((subject_vectors, body_vectors, sender_vectors))
+
+        return feature_matrix
+
+    def get_encoded_corpus(self, df: pd.DataFrame) -> csr_matrix:
         final_df = self._clean_email_df(df)
-        encoded_corpus_df = pd.DataFrame(_encode_corpus_for_train(final_df['body']))
-        encoded_labels_df = pd.DataFrame(self._encode_labels(final_df['labels']))
+        return self._encode_corpus(final_df)
+
+    def get_training_data(self, df: pd.DataFrame) -> Tuple[csr_matrix, np.ndarray]:
+        final_df = self._clean_email_df(df)
+        encoded_corpus_df = get_encoded_corpus_for_train(final_df)
+        encoded_labels_df = self._encode_labels(final_df['labels'])
         return encoded_corpus_df, encoded_labels_df
 
 
@@ -91,16 +148,9 @@ class GenerateLabels(Preprocess):
         return labels for the given dataframe of mails
         """
         encoded_message = super().get_encoded_corpus(read_mails)
-        encoded_labels = self._predict(encoded_message)
+        encoded_labels = self.model.predict(encoded_message)
         labels_list = self.mlb.inverse_transform(encoded_labels)
         return labels_list
-
-    def _predict(self, encoded_message):
-        """
-        return encoded labels for the given encoded message
-        """
-        encoded_labels = self.model.predict(encoded_message)
-        return encoded_labels
 
 
 class FitModel(Preprocess):
@@ -109,11 +159,11 @@ class FitModel(Preprocess):
         self.df = df
 
     def knn_fit_and_dump(self):
-        encoded_message_body_df, encoded_labels_df = self.get_training_data(self.df)
+        encoded_message_body, encoded_labels = self.get_training_data(self.df)
         knn_clf = KNeighborsClassifier()
         logger.info('training model')
         t0 = time()
-        knn_clf.fit(encoded_message_body_df, encoded_labels_df)
+        knn_clf.fit(encoded_message_body, encoded_labels)
         joblib.dump(knn_clf, 'data/knn_model.pkl')
         logger.info(f'model saved! took {time() - t0} seconds')
 
@@ -129,3 +179,20 @@ def train_and_dump_model():
 
     else:
         logger.error('training data does not exist yet')
+
+
+def cluster_mails(preprocessed_data) -> np.ndarray:
+
+    k = 25
+    model = KMeans(n_clusters=k, random_state=42)
+    predicted_labels = model.fit_predict(preprocessed_data)
+    return predicted_labels
+
+
+def propagate_labels(original_labels, predicted_labels_int, n_clusters):
+    propagated_labels = pd.Series([], name='propagated_labels', dtype='object')
+    return
+
+
+if __name__ == '__main__':
+    train_and_dump_model()
