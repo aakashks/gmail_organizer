@@ -9,10 +9,9 @@ from typing import List, Tuple
 import joblib
 import numpy as np
 import pandas as pd
-import scipy.sparse.csr_matrix
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from scipy.sparse import hstack
+from scipy.sparse import hstack, csr_matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.neighbors import KNeighborsClassifier
@@ -49,7 +48,7 @@ def preprocess_sender(address):
     return ' '.join(address_lst)
 
 
-def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> scipy.sparse.csr_matrix:
+def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> csr_matrix:
     """
     convert corpus of words into tfidf vectorized matrix with vocabulary of the corpus
     as a feature and each message as a row
@@ -82,7 +81,12 @@ def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> 
 class Preprocess:
     def __init__(self):
         self.mlb = joblib.load('data/multiLabelBinarizer.pkl')
-        self.tfidf = dill.load(open('data/TfidfVectorizer.pkl', 'rb'))
+        # checking if file exists or not
+        if os.path.exists('data/TfidfVectorizers.pkl'):
+            self.tfidf = dill.load(open('data/TfidfVectorizers.pkl', 'rb'))
+
+        else:
+            self.tfidf = None
 
     def _clean_email_df(self, df: pd.DataFrame) -> pd.DataFrame:
         # to remove emails sent by the user himself
@@ -99,13 +103,17 @@ class Preprocess:
         labels_array = [list(st.split(',')) for st in label_series]
         return self.mlb.transform(labels_array)
 
-    def _encode_corpus(self, df: pd.DataFrame) -> scipy.sparse.csr_matrix:
+    def _encode_corpus(self, df: pd.DataFrame) -> csr_matrix:
         # checking for column names
         if not [col in df for col in ['sender', 'sender', 'body']]:
             logger.error('dataframe doesnt contain required column names')
             raise Exception
 
         # unpacking loaded tfidf
+        if self.tfidf:
+            logger.error('tfidf not loaded. should use get_encoded_corpus_for_train')
+            raise ValueError
+
         sender_tfidf, subject_tfidf, body_tfidf = self.tfidf
 
         # fitting and transforming the respective features of dataframe into sparse matrices
@@ -118,11 +126,11 @@ class Preprocess:
 
         return feature_matrix
 
-    def get_encoded_corpus(self, df: pd.DataFrame) -> scipy.sparse.csr_matrix:
+    def get_encoded_corpus(self, df: pd.DataFrame) -> csr_matrix:
         final_df = self._clean_email_df(df)
         return self._encode_corpus(final_df)
 
-    def get_training_data(self, df: pd.DataFrame) -> Tuple[scipy.sparse.csr_matrix, np.ndarray]:
+    def get_training_data(self, df: pd.DataFrame) -> Tuple[csr_matrix, np.ndarray]:
         final_df = self._clean_email_df(df)
         encoded_corpus_df = get_encoded_corpus_for_train(final_df)
         encoded_labels_df = self._encode_labels(final_df['labels'])
@@ -170,7 +178,3 @@ def train_and_dump_model():
 
     else:
         logger.error('training data does not exist yet')
-
-
-if __name__ == '__main__':
-    train_and_dump_model()
