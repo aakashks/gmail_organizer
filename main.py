@@ -121,6 +121,7 @@ def label_specific_mails(n: int, indices: List[int], resetLabels=False):
             label_mails(specific_mails_df)
     console.log('[red]Done!')
 
+
 def label_unread_mails(n: int):
     """
     labels unread mails out of first n mails
