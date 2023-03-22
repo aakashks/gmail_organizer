@@ -1,26 +1,21 @@
+import dill
 import json
 import logging
-import re
 import os.path
+import re
 from time import time
 from typing import List, Tuple
 
 import joblib
 import numpy as np
 import pandas as pd
+import scipy.sparse.csr_matrix
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from scipy.sparse import hstack
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.pipeline import Pipeline
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.model_selection import cross_val_score, GridSearchCV, RandomizedSearchCV, train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.compose import ColumnTransformer
-from nltk.corpus import wordnet, stopwords
-from nltk.stem import WordNetLemmatizer
-from scipy.sparse import hstack, csr_matrix
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +30,7 @@ def preprocess_text(text):
     removes any special character
     """
     text = text.lower()
-    text = re.sub('[^a-zA-Z]', ' ', text)
+    text = re.sub('[^a-zA-Z,]', ' ', text)
     tokens = text.split()
     tokens = [token for token in tokens if token not in stop_words]
     processed_text = ' '.join([lemmatizer.lemmatize(token) for token in tokens])
@@ -54,14 +49,14 @@ def preprocess_sender(address):
     return ' '.join(address_lst)
 
 
-def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> csr_matrix:
+def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> scipy.sparse.csr_matrix:
     """
     convert corpus of words into tfidf vectorized matrix with vocabulary of the corpus
     as a feature and each message as a row
     """
     # checking for column names
     if not [col in df for col in ['sender', 'sender', 'body']]:
-        logger.error('dataframe doesnt contains required column names')
+        logger.error('dataframe doesnt contain required column names')
         raise Exception
 
     # Creating Tfidf Vectorizers for all the 3 fields
@@ -78,19 +73,24 @@ def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> 
     feature_matrix = hstack((subject_vectors, body_vectors, sender_vectors))
 
     # dump tfidf vectorizers to reuse vocabulary
-    joblib.dump([sender_tfidf, body_tfidf, subject_tfidf], 'data/TfidfVectorizers.pkl', compress=1)
+    vectorizers = [sender_tfidf, body_tfidf, subject_tfidf]
+    # using dill as it will also serialize the user defined preprocessing functions
+    dill.dump(vectorizers, open('data/TfidfVectorizers.pkl', 'wb'))
     return feature_matrix
 
 
 class Preprocess:
     def __init__(self):
         self.mlb = joblib.load('data/multiLabelBinarizer.pkl')
-        self.tfidf = joblib.load('data/TfidfVectorizer.pkl')
+        self.tfidf = dill.load(open('data/TfidfVectorizer.pkl', 'rb'))
 
     def _clean_email_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        # to remove emails sent by the user himself
         condition = df['sender'] == f'{USER_EMAIL_ID}'
         df.drop(df[condition].index, inplace=True)
         df_reindexed = df.reset_index(drop=True)
+
+        # filling null values with empty string
         imputer = SimpleImputer(strategy='constant', fill_value='')
         final_df = pd.DataFrame(imputer.fit_transform(df_reindexed), columns=df_reindexed.columns)
         return final_df
@@ -99,10 +99,10 @@ class Preprocess:
         labels_array = [list(st.split(',')) for st in label_series]
         return self.mlb.transform(labels_array)
 
-    def _encode_corpus(self, df: pd.Series) -> csr_matrix:
+    def _encode_corpus(self, df: pd.DataFrame) -> scipy.sparse.csr_matrix:
         # checking for column names
         if not [col in df for col in ['sender', 'sender', 'body']]:
-            logger.error('dataframe doesnt contains required column names')
+            logger.error('dataframe doesnt contain required column names')
             raise Exception
 
         # unpacking loaded tfidf
@@ -118,14 +118,14 @@ class Preprocess:
 
         return feature_matrix
 
-    def get_encoded_corpus(self, df: pd.DataFrame) -> csr_matrix:
+    def get_encoded_corpus(self, df: pd.DataFrame) -> scipy.sparse.csr_matrix:
         final_df = self._clean_email_df(df)
-        return pd.DataFrame(self._encode_corpus(final_df['body']))
+        return self._encode_corpus(final_df)
 
-    def get_training_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def get_training_data(self, df: pd.DataFrame) -> Tuple[scipy.sparse.csr_matrix, np.ndarray]:
         final_df = self._clean_email_df(df)
-        encoded_corpus_df = pd.DataFrame(get_encoded_corpus_for_train(final_df))
-        encoded_labels_df = pd.DataFrame(self._encode_labels(final_df['labels']))
+        encoded_corpus_df = get_encoded_corpus_for_train(final_df)
+        encoded_labels_df = self._encode_labels(final_df['labels'])
         return encoded_corpus_df, encoded_labels_df
 
 
@@ -150,11 +150,11 @@ class FitModel(Preprocess):
         self.df = df
 
     def knn_fit_and_dump(self):
-        encoded_message_body_df, encoded_labels_df = self.get_training_data(self.df)
+        encoded_message_body, encoded_labels = self.get_training_data(self.df)
         knn_clf = KNeighborsClassifier()
         logger.info('training model')
         t0 = time()
-        knn_clf.fit(encoded_message_body_df, encoded_labels_df)
+        knn_clf.fit(encoded_message_body, encoded_labels)
         joblib.dump(knn_clf, 'data/knn_model.pkl')
         logger.info(f'model saved! took {time() - t0} seconds')
 
