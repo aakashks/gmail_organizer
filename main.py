@@ -1,5 +1,6 @@
 import logging
 import re
+import os.path
 from time import time
 from typing import List
 from tabulate import tabulate
@@ -11,7 +12,8 @@ from rich.table import Table
 
 from lib.read_mails import read_n_mails, store_n_mails
 from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels, list_labels_from_old
-from lib.ML import train_and_dump_model
+from lib.ML import train_and_dump_model, FitModel
+from lib.data_methods import write_label_names
 
 
 # setting up logger to see logs
@@ -91,20 +93,8 @@ def label_first_n_mails(n):
 def display_mails(n):
     with console.status(f'[bold green]Reading {n} mails!'):
         mail_df = read_mails(n)
-        labels_dict = list_labels_from_old()
-
-        def label_filter(label_ids):
-            label_names = []
-            for label_id in label_ids:
-                if label_id == labels_dict[label_id] and label_id not in ['UNREAD', 'INBOX']:
-                    label_ids.remove(label_id)
-                else:
-                    label_names.append(labels_dict[label_id])
-
-            return ','.join(label_names)
-
         display_mail_df = mail_df.loc[:, ['sender', 'subject']]
-        display_mail_df['label names'] = mail_df['labels'].str.split(',').apply(label_filter)
+        display_mail_df['label names'] = write_label_names(mail_df['labels'], exc_list=['UNREAD', 'INBOX'])
 
         # setting up word limit for display of subject line
         display_mail_df['subject'] = display_mail_df['subject'].str.slice(0, 60)
