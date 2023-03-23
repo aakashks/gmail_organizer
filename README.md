@@ -3,6 +3,10 @@
 ## MultiOutput Classification of Gmails
 using semi-supervised, active Machine Learning
 
+## Description
+
+Due to small size of the dataset, I preferred using simple methods over neural networks etc.
+
 ## Usage
 
 For usage please see the [user guide](USER_GUIDE.md)

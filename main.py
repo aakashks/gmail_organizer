@@ -1,5 +1,6 @@
 import logging
 import re
+import os.path
 from time import time
 from typing import List
 from tabulate import tabulate
@@ -11,7 +12,8 @@ from rich.table import Table
 
 from lib.read_mails import read_n_mails, store_n_mails
 from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels, list_labels_from_old
-from lib.ML import train_and_dump_model
+from lib.ML import train_and_dump_model, FitModel
+from lib.data_methods import write_label_names
 
 
 # setting up logger to see logs
@@ -36,6 +38,7 @@ menu_message = """\
     7: train model on your data
     8: use different model
     9: create labels (for new user)
+    10: cluster emails    
     help | cls | exit
     (Enter full screen for best experience)
 """
@@ -91,20 +94,8 @@ def label_first_n_mails(n):
 def display_mails(n):
     with console.status(f'[bold green]Reading {n} mails!'):
         mail_df = read_mails(n)
-        labels_dict = list_labels_from_old()
-
-        def label_filter(label_ids):
-            label_names = []
-            for label_id in label_ids:
-                if label_id == labels_dict[label_id] and label_id not in ['UNREAD', 'INBOX']:
-                    label_ids.remove(label_id)
-                else:
-                    label_names.append(labels_dict[label_id])
-
-            return ','.join(label_names)
-
         display_mail_df = mail_df.loc[:, ['sender', 'subject']]
-        display_mail_df['label names'] = mail_df['labels'].str.split(',').apply(label_filter)
+        display_mail_df['label names'] = write_label_names(mail_df['labels'], exc_list=['UNREAD', 'INBOX'])
 
         # setting up word limit for display of subject line
         display_mail_df['subject'] = display_mail_df['subject'].str.slice(0, 60)
@@ -156,6 +147,21 @@ def train_model():
     with console.status('Training model'):
         train_and_dump_model()
         console.log(f'[yellow]Model trained in {time()-t1} seconds')
+
+
+def perform_clustering():
+    t1 = time()
+    with console.status('Performing Clustering'):
+        if os.path.exists('data/training_data.csv'):
+            df = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
+            clusterer = FitModel(df)
+            predicted_labels = clusterer.k_means_cluster(25)
+            df['cluster'] = pd.Series(predicted_labels)
+
+        else:
+            logger.error('training data does not exist yet')
+        console.log(f'[yellow]Clustering done in {time()-t1} seconds')
+
 
 
 label_name_list = [
@@ -236,6 +242,10 @@ while True:
                 with console.status('Creating labels...'):
                     create_labels()
                 console.log('[red]Done')
+
+    elif input_msg == '10':
+        store_user_data()
+        perform_clustering()
 
     elif input_msg == 'menu':
         console.print(menu_message)

@@ -192,10 +192,6 @@ def train_and_dump_model():
     else:
         logger.error('training data does not exist yet')
 
-def propagate_labels(original_labels, predicted_labels_int, n_clusters):
-    propagated_labels = pd.Series([], name='propagated_labels', dtype='object')
-    return
-
 
 if __name__ == '__main__':
     train_and_dump_model()
