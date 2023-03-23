@@ -173,12 +173,6 @@ class FitModel(Preprocess):
         joblib.dump(clf, 'data/knn_model.pkl')
         logger.info(f'model saved! took {time() - t0} seconds')
 
-    def k_means_cluster(self, n_clusters=25) -> np.ndarray:
-        feature_matrix, encoded_labels = self.data_tup
-        model = KMeans(n_clusters=n_clusters, random_state=42)
-        predicted_labels = model.fit_predict(feature_matrix)
-        return predicted_labels
-
 
 def train_and_dump_model():
     """

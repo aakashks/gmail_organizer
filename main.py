@@ -38,7 +38,6 @@ menu_message = """\
     7: train model on your data
     8: use different model
     9: create labels (for new user)
-    10: cluster emails    
     help | cls | exit
     (Enter full screen for best experience)
 """
@@ -149,21 +148,6 @@ def train_model():
         console.log(f'[yellow]Model trained in {time()-t1} seconds')
 
 
-def perform_clustering():
-    t1 = time()
-    with console.status('Performing Clustering'):
-        if os.path.exists('data/training_data.csv'):
-            df = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
-            clusterer = FitModel(df)
-            predicted_labels = clusterer.k_means_cluster(25)
-            df['cluster'] = pd.Series(predicted_labels)
-
-        else:
-            logger.error('training data does not exist yet')
-        console.log(f'[yellow]Clustering done in {time()-t1} seconds')
-
-
-
 label_name_list = [
     value for key, value in list_labels_from_old().items() if re.match('Label_[0-9]', key)
 ]
@@ -242,10 +226,6 @@ while True:
                 with console.status('Creating labels...'):
                     create_labels()
                 console.log('[red]Done')
-
-    elif input_msg == '10':
-        store_user_data()
-        perform_clustering()
 
     elif input_msg == 'menu':
         console.print(menu_message)
