@@ -133,9 +133,9 @@ class Preprocess:
 
     def get_training_data(self, df: pd.DataFrame) -> Tuple[csr_matrix, np.ndarray]:
         final_df = self._clean_email_df(df)
-        encoded_corpus_df = get_encoded_corpus_for_train(final_df)
+        feature_matrix = get_encoded_corpus_for_train(final_df)
         encoded_labels_df = self._encode_labels(final_df['labels'])
-        return encoded_corpus_df, encoded_labels_df
+        return feature_matrix, encoded_labels_df
 
 
 class GenerateLabels(Preprocess):
@@ -145,7 +145,7 @@ class GenerateLabels(Preprocess):
 
     def generate_labels(self, read_mails: pd.DataFrame) -> List[Tuple[str]]:
         """
-        return labels for the given dataframe of mails
+        return labels for the given dataframe of mails from previously trained model
         """
         encoded_message = super().get_encoded_corpus(read_mails)
         encoded_labels = self.model.predict(encoded_message)
@@ -154,18 +154,30 @@ class GenerateLabels(Preprocess):
 
 
 class FitModel(Preprocess):
-    def __init__(self, df: pd.DataFrame, model_name='knn'):
+    def __init__(self, df: pd.DataFrame, method='knn'):
         super().__init__()
-        self.df = df
+        self.data_tup = self.get_training_data(df)
+        self.method = method
 
-    def knn_fit_and_dump(self):
-        encoded_message_body, encoded_labels = self.get_training_data(self.df)
-        knn_clf = KNeighborsClassifier()
+    def fit_and_dump(self):
+        feature_matrix, encoded_labels = self.data_tup
+        if self.method == 'knn':
+            clf = KNeighborsClassifier()
+        else:
+            logger.error('incorrect model name')
+            raise ValueError
+
         logger.info('training model')
         t0 = time()
-        knn_clf.fit(encoded_message_body, encoded_labels)
-        joblib.dump(knn_clf, 'data/knn_model.pkl')
+        clf.fit(feature_matrix, encoded_labels)
+        joblib.dump(clf, 'data/knn_model.pkl')
         logger.info(f'model saved! took {time() - t0} seconds')
+
+    def k_means_cluster(self, n_clusters=25) -> np.ndarray:
+        feature_matrix, encoded_labels = self.data_tup
+        model = KMeans(n_clusters=n_clusters, random_state=42)
+        predicted_labels = model.fit_predict(feature_matrix)
+        return predicted_labels
 
 
 def train_and_dump_model():
@@ -175,23 +187,10 @@ def train_and_dump_model():
     if os.path.exists('data/training_data.csv'):
         df1 = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
         knn_model = FitModel(df1)
-        knn_model.knn_fit_and_dump()
+        knn_model.fit_and_dump()
 
     else:
         logger.error('training data does not exist yet')
-
-
-def cluster_mails(preprocessed_data) -> np.ndarray:
-
-    k = 25
-    model = KMeans(n_clusters=k, random_state=42)
-    predicted_labels = model.fit_predict(preprocessed_data)
-    return predicted_labels
-
-
-def propagate_labels(original_labels, predicted_labels_int, n_clusters):
-    propagated_labels = pd.Series([], name='propagated_labels', dtype='object')
-    return
 
 
 if __name__ == '__main__':
