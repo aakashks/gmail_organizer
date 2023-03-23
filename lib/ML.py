@@ -30,7 +30,7 @@ def preprocess_text(text):
     removes any special character
     """
     text = text.lower()
-    text = re.sub('[^a-zA-Z,]', ' ', text)
+    text = re.sub('[^a-zA-Z,.]', ' ', text)
     tokens = text.split()
     tokens = [token for token in tokens if token not in stop_words]
     processed_text = ' '.join([lemmatizer.lemmatize(token) for token in tokens])
