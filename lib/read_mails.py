@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 service = build_service()
 TOTAL_MAILS = 993
 MAX_MAIL_LIST = 500
-EXC_INFO = False
+EXC_INFO = True
 
 
 def read_n_mails(no_of_mails: int) -> pd.DataFrame:

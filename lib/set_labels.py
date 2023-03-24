@@ -14,7 +14,7 @@ from lib.read_mails import read_n_mails
 
 service = build_service()
 logger = logging.getLogger(__name__)
-EXC_INFO = False
+EXC_INFO = True
 
 
 def store_list_of_labels():
@@ -111,13 +111,23 @@ def label_mails(mails_df: pd.DataFrame):
     knn_label_generator = GenerateLabels()
     t0 = time()
     logger.info('model prediction started')
-    labels_list = knn_label_generator.generate_labels(mails_df)
+    label_names_list = knn_label_generator.generate_labels(mails_df)
+    label_ids_list = []
+
+    for label_names in label_names_list:
+        labels_dict = list_labels_from_old()
+        label_ids = [
+            list(labels_dict.keys())[list(labels_dict.values()).index(label_name)]
+            for label_name in label_names
+        ]
+        label_ids_list.append(label_ids)
+
     logger.info(f'model generated labels in {time() - t0} seconds')
     ctr = 0
 
     for i, msg_id in enumerate(mails_df['id']):
         logger.debug(f'applying label to MailNo- {i}')
-        status = set_label(msg_id, labels_list[i])
+        status = set_label(msg_id, label_ids_list[i])
         if status:
             ctr += 1
     
@@ -145,23 +155,3 @@ def reset_labels(mails_df: pd.DataFrame):
 
     for i, msg_id in enumerate(mails_df['id']):
         set_label(msg_id, labels_list[i], removeLabels=True)
-
-
-def write_label_names(label_id_series: pd.Series, exc_list=[]) -> pd.Series:
-    """
-    :param exc_list: a list of label_ids among the default ones which are required
-    will convert comma separated label_ids into label_names for a series of strings
-    """
-    labels_dict = list_labels_from_old()
-
-    def label_filter(label_id_st):
-        label_names = []
-        for label_id in label_id_st:
-            if label_id == labels_dict[label_id] and label_id not in exc_list:
-                label_id_st.remove(label_id)
-            else:
-                label_names.append(labels_dict[label_id])
-
-        return ','.join(label_names)
-
-    return label_id_series.str.split(',').apply(label_filter)

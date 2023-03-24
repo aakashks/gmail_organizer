@@ -1,3 +1,4 @@
+import gzip
 import dill
 import json
 import logging
@@ -16,6 +17,7 @@ from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import MultiLabelBinarizer
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,13 @@ logger = logging.getLogger(__name__)
 USER_EMAIL_ID = json.load(open('conf/user_info.json'))['USER_EMAIL_ID']
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
+
+# loading labels
+if os.path.exists('data/label_dict.json'):
+    with open('data/label_dict.json', 'r') as file:
+        labels_dict = json.load(file)
+else:
+    logger.error('File labels_dict not found')
 
 
 def preprocess_text(text):
@@ -75,19 +84,36 @@ def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> 
     # dump tfidf vectorizers to reuse vocabulary
     vectorizers = [sender_tfidf, body_tfidf, subject_tfidf]
     # using dill as it will also serialize the user defined preprocessing functions
-    dill.dump(vectorizers, open('data/TfidfVectorizers.pkl', 'wb'))
+    dill.dump(vectorizers, gzip.open('data/TfidfVectorizers.pklz', 'wb'))
     return feature_matrix
+
+
+def write_label_names(label_id_series: pd.Series, exc_list=[]) -> pd.Series:
+    """
+    :param exc_list: a list of label_ids among the default ones which are required
+    will convert comma separated label_ids into label_names for a series of strings
+    """
+
+    def label_filter(label_id_st):
+        label_names = []
+        for label_id in label_id_st:
+            if label_id == labels_dict[label_id] and label_id not in exc_list:
+                label_id_st.remove(label_id)
+            else:
+                label_names.append(labels_dict[label_id])
+
+        return ','.join(label_names)
+
+    return label_id_series.str.split(',').apply(label_filter)
 
 
 class Preprocess:
     def __init__(self):
-        self.mlb = joblib.load('data/multiLabelBinarizer.pkl')
-        # checking if file exists or not
-        if os.path.exists('data/TfidfVectorizers.pkl'):
-            self.tfidf = dill.load(open('data/TfidfVectorizers.pkl', 'rb'))
+        self.labels_dict = labels_dict
+        self.all_labels = [value for key, value in self.labels_dict.items() if key != value]
 
-        else:
-            self.tfidf = None
+        self.mlb = MultiLabelBinarizer(classes=self.all_labels)
+        self.mlb.fit(self.all_labels)
 
     def _clean_email_df(self, df: pd.DataFrame) -> pd.DataFrame:
         # to remove emails sent by the user himself
@@ -100,8 +126,9 @@ class Preprocess:
         final_df = pd.DataFrame(imputer.fit_transform(df_reindexed), columns=df_reindexed.columns)
         return final_df
 
-    def _encode_labels(self, label_series: pd.Series, strategy: str = 'mlb') -> np.ndarray:
-        labels_array = [list(st.split(',')) for st in label_series]
+    def _encode_labels(self, label_id_series: pd.Series, strategy: str = 'mlb') -> np.ndarray:
+        label_name_series = write_label_names(label_id_series)
+        labels_array = [list(st.split(',')) for st in label_name_series]
         return self.mlb.transform(labels_array)
 
     def _encode_corpus(self, df: pd.DataFrame) -> csr_matrix:
@@ -110,10 +137,14 @@ class Preprocess:
             logger.error('dataframe doesnt contain required column names')
             raise Exception
 
-        # unpacking loaded tfidf
-        if self.tfidf:
+        # loading vectorizers
+        if os.path.exists('data/TfidfVectorizers.pklz'):
+            self.tfidf = dill.load(gzip.open('data/TfidfVectorizers.pklz', 'rb'))
+
+        else:
+            self.tfidf = None
             logger.error('tfidf not loaded. should use get_encoded_corpus_for_train')
-            raise ValueError
+            raise Exception
 
         sender_tfidf, subject_tfidf, body_tfidf = self.tfidf
 
