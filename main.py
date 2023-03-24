@@ -11,9 +11,8 @@ from rich.logging import RichHandler
 from rich.table import Table
 
 from lib.read_mails import read_n_mails, store_n_mails
-from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels, list_labels_from_old
+from lib.set_labels import label_mails, reset_labels, store_list_of_labels, create_labels, list_labels_from_old, write_label_names
 from lib.ML import train_and_dump_model, FitModel
-from lib.data_methods import write_label_names
 
 
 # setting up logger to see logs
