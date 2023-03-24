@@ -16,8 +16,10 @@ from scipy.sparse import hstack, csr_matrix
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
+from sklearn.multioutput import MultiOutputClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.svm import SVC
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ def preprocess_sender(address):
     return ' '.join(address_lst)
 
 
-def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.95, min_df=0.05) -> csr_matrix:
+def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.8, min_df=0.01) -> csr_matrix:
     """
     convert corpus of words into tfidf vectorized matrix with vocabulary of the corpus
     as a feature and each message as a row
@@ -185,7 +187,7 @@ class GenerateLabels(Preprocess):
 
 
 class FitModel(Preprocess):
-    def __init__(self, df: pd.DataFrame, method='knn'):
+    def __init__(self, df: pd.DataFrame, method='svc'):
         super().__init__()
         self.data_tup = self.get_training_data(df)
         self.method = method
@@ -194,6 +196,9 @@ class FitModel(Preprocess):
         feature_matrix, encoded_labels = self.data_tup
         if self.method == 'knn':
             clf = KNeighborsClassifier()
+
+        if self.method == 'svc':
+            clf = MultiOutputClassifier(SVC())
         else:
             logger.error('incorrect model name')
             raise ValueError
