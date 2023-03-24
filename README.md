@@ -2,7 +2,7 @@
 
 ## MultiOutput Classification of Gmails
 
-A command line application which automatically apply labels in the user's gmail ML classification of the mails.
+A command line application which automatically apply labels in the user's gmail using classification.
 
 ## Description
 
