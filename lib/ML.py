@@ -187,17 +187,16 @@ class GenerateLabels(Preprocess):
 
 
 class FitModel(Preprocess):
-    def __init__(self, df: pd.DataFrame, method='svc'):
+    def __init__(self, df: pd.DataFrame, model_name='knn'):
         super().__init__()
         self.data_tup = self.get_training_data(df)
-        self.method = method
+        self.model_name = model_name
 
     def fit_and_dump(self):
         feature_matrix, encoded_labels = self.data_tup
-        if self.method == 'knn':
+        if self.model_name == 'knn':
             clf = KNeighborsClassifier()
-
-        if self.method == 'svc':
+        if self.model_name == 'svm':
             clf = MultiOutputClassifier(SVC())
         else:
             logger.error('incorrect model name')
@@ -206,7 +205,7 @@ class FitModel(Preprocess):
         logger.info('training model')
         t0 = time()
         clf.fit(feature_matrix, encoded_labels)
-        joblib.dump(clf, 'data/knn_model.pkl')
+        joblib.dump(clf, f'data/{self.model_name}_model.pkl')
         logger.info(f'model saved! took {time() - t0} seconds')
 
 
