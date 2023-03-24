@@ -13,6 +13,7 @@ It provides the advantage that a high weight of the tf-idf calculation is reache
 a high term frequency(tf) in the given document and a low document frequency of the term in the whole collection
 
 The goal of developing this application was to let user easily sort his emails, thus saving his time.
+The model evaluation and other details are there in [this notebook](notebooks/ML_supervised.ipynb).
 
 ## Usage
 

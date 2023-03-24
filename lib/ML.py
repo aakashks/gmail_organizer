@@ -172,7 +172,7 @@ class Preprocess:
 
 
 class GenerateLabels(Preprocess):
-    def __init__(self, model_name='knn'):
+    def __init__(self, model_name='svm'):
         super().__init__()
         self.model = joblib.load(f'data/{model_name}_model.pkl')
 
@@ -187,7 +187,7 @@ class GenerateLabels(Preprocess):
 
 
 class FitModel(Preprocess):
-    def __init__(self, df: pd.DataFrame, model_name='knn'):
+    def __init__(self, df: pd.DataFrame, model_name='svm'):
         super().__init__()
         self.data_tup = self.get_training_data(df)
         self.model_name = model_name
