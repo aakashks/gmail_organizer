@@ -71,7 +71,7 @@ help_message += help_message_end
 
 
 def read_mails(n):
-    if not READ_REAL_DATA:
+    if READ_REAL_DATA:
         return read_n_mails(n)
 
     else:
@@ -96,7 +96,7 @@ def display_mails(n):
         display_mail_df['label names'] = write_label_names(mail_df['labels'], exc_list=['UNREAD', 'INBOX'])
 
         # setting up word limit for display of subject line
-        display_mail_df['subject'] = display_mail_df['subject'].str.slice(0, 60)
+        display_mail_df['subject'].apply(lambda text: re.sub('[^a-zA-Z,.|]', ' ', text)[:60], inplace=True)
         console.print(tabulate(display_mail_df, headers='keys', tablefmt='psql'))
 
 
