@@ -96,7 +96,7 @@ def display_mails(n):
         display_mail_df['label names'] = write_label_names(mail_df['labels'], exc_list=['UNREAD', 'INBOX'])
 
         # setting up word limit for display of subject line
-        display_mail_df['subject'] = display_mail_df['subject'].apply(lambda text: re.sub('\W+', ' ', text)[:60])
+        display_mail_df['subject'] = display_mail_df['subject'].apply(lambda text: re.sub('[^a-zA-Z0-9,.]', ' ', text)[:60])
         console.print(tabulate(display_mail_df, headers='keys', tablefmt='psql'))
 
 
