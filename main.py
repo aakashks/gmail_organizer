@@ -16,7 +16,7 @@ from lib.ML import train_and_dump_model, FitModel, write_label_names
 
 
 # setting up logger to see logs
-TEST_MODE = True
+TEST_MODE = False
 READ_REAL_DATA = True
 logging.basicConfig(
     level=logging.DEBUG if TEST_MODE else logging.ERROR,
@@ -96,7 +96,7 @@ def display_mails(n):
         display_mail_df['label names'] = write_label_names(mail_df['labels'], exc_list=['UNREAD', 'INBOX'])
 
         # setting up word limit for display of subject line
-        display_mail_df['subject'] = display_mail_df['subject'].apply(lambda text: re.sub('\W+', '', text)[:60])
+        display_mail_df['subject'] = display_mail_df['subject'].apply(lambda text: re.sub('\W+', ' ', text)[:60])
         console.print(tabulate(display_mail_df, headers='keys', tablefmt='psql'))
 
 
