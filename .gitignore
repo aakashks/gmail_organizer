@@ -137,8 +137,5 @@ training_data.csv
 # user secrets
 conf/
 
-# user data
-label_dict.json
-
 # other temporary files
 temp/
