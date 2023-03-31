@@ -13,7 +13,7 @@ import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from scipy.sparse import hstack, csr_matrix
-from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.multioutput import MultiOutputClassifier
@@ -60,7 +60,7 @@ def preprocess_sender(address):
     return ' '.join(address_lst)
 
 
-def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.8, min_df=0.01) -> csr_matrix:
+def get_encoded_corpus_for_train(df: pd.DataFrame) -> csr_matrix:
     """
     convert corpus of words into tfidf vectorized matrix with vocabulary of the corpus
     as a feature and each message as a row
@@ -71,8 +71,8 @@ def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.8, min_df=0.01) -> c
         raise Exception
 
     # Creating Tfidf Vectorizers for all the 3 fields
-    subject_tfidf = TfidfVectorizer(preprocessor=preprocess_text, min_df=0.01)
-    body_tfidf = TfidfVectorizer(preprocessor=preprocess_text, max_df=max_df, min_df=min_df)
+    subject_tfidf = TfidfVectorizer(preprocessor=preprocess_text, max_df=0.9, min_df=0.005)
+    body_tfidf = TfidfVectorizer(preprocessor=preprocess_text, max_df=0.8, min_df=0.01)
     sender_tfidf = TfidfVectorizer(preprocessor=preprocess_sender)
 
     # fitting and transforming the respective features of dataframe into sparse matrices
@@ -196,8 +196,10 @@ class FitModel(Preprocess):
         feature_matrix, encoded_labels = self.data_tup
         if self.model_name == 'knn':
             clf = KNeighborsClassifier()
-        if self.model_name == 'svm':
-            clf = MultiOutputClassifier(SVC())
+        elif self.model_name == 'svm':
+            clf = MultiOutputClassifier(SVC(random_state=42, class_weight='balanced'))
+        elif self.model_name == 'rf':
+            clf = RandomForestClassifier(random_state=42, n_jobs=-1, class_weight='balanced')
         else:
             logger.error('incorrect model name')
             raise ValueError
@@ -209,18 +211,18 @@ class FitModel(Preprocess):
         logger.info(f'model saved! took {time() - t0} seconds')
 
 
-def train_and_dump_model():
+def train_and_dump_model(model_name='svm'):
     """
     will train the model on training data and store the model
     """
     if os.path.exists('data/training_data.csv'):
         df1 = pd.read_csv('data/training_data.csv', sep='~', index_col=0)
-        knn_model = FitModel(df1)
-        knn_model.fit_and_dump()
+        model = FitModel(df1, model_name)
+        model.fit_and_dump()
 
     else:
         logger.error('training data does not exist yet')
 
 
 if __name__ == '__main__':
-    train_and_dump_model()
+    train_and_dump_model('svm')

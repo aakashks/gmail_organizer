@@ -108,10 +108,10 @@ def label_mails(mails_df: pd.DataFrame):
     will set labels to all the messages in the given dataframe according to the model's predictions
     :param mails_df: dataframe of mails as it is received
     """
-    knn_label_generator = GenerateLabels()
+    label_generator = GenerateLabels()
     t0 = time()
     logger.info('model prediction started')
-    label_names_list = knn_label_generator.generate_labels(mails_df)
+    label_names_list = label_generator.generate_labels(mails_df)
     label_ids_list = []
 
     for label_names in label_names_list:

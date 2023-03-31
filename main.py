@@ -142,8 +142,9 @@ def store_user_data():
 
 def train_model():
     t1 = time()
+    model_name = console.input('which model to be fitted? svm/rf/knn: ')
     with console.status('Training model'):
-        train_and_dump_model()
+        train_and_dump_model(model_name)
         console.log(f'[yellow]Model trained in {time()-t1} seconds')
 
 
