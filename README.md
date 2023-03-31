@@ -14,7 +14,7 @@ It provides the advantage that
 > low document frequency of the term in the whole collection.
 
 The goal of developing this application was to let users quickly sort their emails, thus saving them time.
-The model evaluation and other details are described in detail in [this notebook](notebooks/ML_supervised.ipynb).
+The model evaluation and other details are described in detail in [this notebook](notebooks/ML_supervised2.ipynb).
 
 ## Usage
 
@@ -38,7 +38,7 @@ I did not label every mail category, but only a few categories that seemed impor
 As a result, the classifier also doesn't label many emails 
 (as most of them are similar to those which were not important to me)
 
-The whole application has limited features because of time limitations.
+The whole application has limited features because of time constraints.
 
 ## Data Privacy
 
