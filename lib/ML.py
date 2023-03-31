@@ -60,7 +60,7 @@ def preprocess_sender(address):
     return ' '.join(address_lst)
 
 
-def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.8, min_df=0.01) -> csr_matrix:
+def get_encoded_corpus_for_train(df: pd.DataFrame) -> csr_matrix:
     """
     convert corpus of words into tfidf vectorized matrix with vocabulary of the corpus
     as a feature and each message as a row
@@ -71,8 +71,8 @@ def get_encoded_corpus_for_train(df: pd.DataFrame, max_df=0.8, min_df=0.01) -> c
         raise Exception
 
     # Creating Tfidf Vectorizers for all the 3 fields
-    subject_tfidf = TfidfVectorizer(preprocessor=preprocess_text, min_df=0.01)
-    body_tfidf = TfidfVectorizer(preprocessor=preprocess_text, max_df=max_df, min_df=min_df)
+    subject_tfidf = TfidfVectorizer(preprocessor=preprocess_text, max_df=0.9, min_df=0.005)
+    body_tfidf = TfidfVectorizer(preprocessor=preprocess_text, max_df=0.8, min_df=0.01)
     sender_tfidf = TfidfVectorizer(preprocessor=preprocess_sender)
 
     # fitting and transforming the respective features of dataframe into sparse matrices
