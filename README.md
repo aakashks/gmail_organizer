@@ -7,8 +7,8 @@ A menu based command-line application that automatically applies labels in the u
 ## Description
 
 It uses Gmail API for reading and modifying gmail messages. Support Vector Classifier is used to perform 
-the classification, although some other classifiers like KNearestNeighbours also work fine.
-Also, I have used term frequency - inverse document frequency (TF-IDF) for vectorizing words.
+the classification (with OvR), although some other classifiers like RandomForestClassifier also work fine.
+For Natural Language Processing of email text, I have used term frequency - inverse document frequency (TF-IDF) Vectorizer for vectorizing the corpus.
 It provides the advantage that 
 > a high weight of the tf-idf calculation is reached when we have a high term frequency(tf) in the given document and a 
 > low document frequency of the term in the whole collection.
