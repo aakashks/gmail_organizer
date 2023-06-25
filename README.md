@@ -1,4 +1,4 @@
-# GMail Organizer v2.0
+# GMail Organizer
 
 ## MultiOutput Classification of Gmails
 
